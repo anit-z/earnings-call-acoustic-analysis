@@ -3,6 +3,7 @@ data/raw/*
 data/processed/*
 *.wav
 *.mp3
+*.flac
 
 # Python
 __pycache__/
@@ -11,6 +12,7 @@ __pycache__/
 .env
 venv/
 env/
+*.egg-info/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -26,7 +28,7 @@ results/tables/*.csv
 !results/figures/final_*
 !results/tables/final_*
 
-# Large model files
+# Model files
 *.pkl
 *.h5
 *.pt
@@ -36,3 +38,10 @@ results/tables/*.csv
 *.out
 *.err
 slurm-*.out
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
