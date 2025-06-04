@@ -1,0 +1,38 @@
+# Data files
+data/raw/*
+data/processed/*
+*.wav
+*.mp3
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Logs
+logs/
+*.log
+
+# Results (keep only final)
+results/figures/*.png
+results/tables/*.csv
+!results/figures/final_*
+!results/tables/final_*
+
+# Large model files
+*.pkl
+*.h5
+*.pt
+*.pth
+
+# Hábrók specific
+*.out
+*.err
+slurm-*.out
