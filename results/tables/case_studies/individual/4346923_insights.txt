@@ -1,0 +1,6 @@
+INSIGHTS FOR CASE STUDY: 4346923
+============================================================
+
+1. Baseline stability pattern - typical earnings call communication pattern
+2. Rating downgrade followed this earnings call - negative financial outcomes
+3. Highest vocal stress detected at 0-10s (F0 CV: 0.278)

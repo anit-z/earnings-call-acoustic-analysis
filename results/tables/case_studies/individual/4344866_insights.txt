@@ -1,0 +1,7 @@
+INSIGHTS FOR CASE STUDY: 4344866
+============================================================
+
+1. Strong acoustic-semantic alignment: 95.8% (95% CI: 89.6-100.0%) - consistent stress signals
+2. Moderate stress pattern detected - some stress indicators present
+3. Rating affirmation followed this earnings call - stable financial outcomes
+4. Highest vocal stress detected at 60-70s (F0 CV: 0.530)

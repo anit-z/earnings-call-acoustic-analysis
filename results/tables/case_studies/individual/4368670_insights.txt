@@ -1,0 +1,8 @@
+INSIGHTS FOR CASE STUDY: 4368670
+============================================================
+
+1. Highly negative sentiment: 91.7% (95% CI: 83.3-97.9%) - suggests challenging financial conditions
+2. Low acoustic-semantic alignment: 12.5% (95% CI: 4.2-22.9%) - divergent stress indicators
+3. Mixed communication pattern - inconsistent stress/arousal indicators
+4. Rating upgrade followed this earnings call - positive financial outcomes
+5. Highest vocal stress detected at 20-30s (F0 CV: 0.572)

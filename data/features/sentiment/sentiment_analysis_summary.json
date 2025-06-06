@@ -1,0 +1,22 @@
+{
+  "total_calls_analyzed": 24,
+  "sentiment_distribution": {
+    "positive_mean": 0.02602746380262606,
+    "negative_mean": 0.5660794768111962,
+    "neutral_mean": 0.40789305996767095
+  },
+  "confidence_metrics": {
+    "mean": 0.9468027237565452,
+    "std": 0.026286597511084846,
+    "min": 0.8957275203589735
+  },
+  "dominant_sentiments": {
+    "negative": 15,
+    "neutral": 9
+  },
+  "sector_analysis_summary": {
+    "most_negative_sector": "Utilities",
+    "most_variable_sector": "Industrial Goods",
+    "sector_differences_detected": true
+  }
+}

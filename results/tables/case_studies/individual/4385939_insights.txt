@@ -1,0 +1,7 @@
+INSIGHTS FOR CASE STUDY: 4385939
+============================================================
+
+1. Very high acoustic volatility (top 0.0%) indicates potential executive stress
+2. Moderate stress pattern detected - some stress indicators present
+3. Rating affirmation followed this earnings call - stable financial outcomes
+4. Highest vocal stress detected at 80-90s (F0 CV: 0.394)

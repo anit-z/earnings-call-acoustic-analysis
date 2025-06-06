@@ -1,0 +1,31 @@
+{
+  "n_calls_analyzed": 24,
+  "average_acoustic_volatility": 0.43509977042126563,
+  "average_negative_sentiment": 0.4790374550394849,
+  "communication_patterns": {
+    "mixed_pattern": 11,
+    "baseline_stability": 6,
+    "moderate_stress": 4,
+    "high_excitement": 1,
+    "moderate_excitement": 1,
+    "high_stress": 1
+  },
+  "top_acoustic_semantic_correlations": {
+    "sentiment_positive_vs_jitter_local": 0.44794168174086224,
+    "sentiment_positive_vs_f0_cv": 0.26870198132206424,
+    "sentiment_positive_vs_speech_rate": 0.2469467298313598,
+    "sentiment_variability_vs_jitter_local": 0.23270260197887307,
+    "sentiment_neutral_vs_f0_std": -0.19488991337197326
+  },
+  "pca_explained_variance": [
+    0.2475123276246193,
+    0.20896100802817577
+  ],
+  "top_features_by_importance": [
+    "acoustic_volatility_scaled",
+    "acoustic_volatility_index",
+    "f0_std",
+    "acoustic_semantic_alignment",
+    "jitter_local"
+  ]
+}

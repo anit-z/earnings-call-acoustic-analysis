@@ -1,0 +1,8 @@
+INSIGHTS FOR CASE STUDY: 4383161
+============================================================
+
+1. Very low negative sentiment: 16.7% (95% CI: 6.2-27.1%) - suggests positive financial outlook
+2. Strong acoustic-semantic alignment: 83.3% (95% CI: 72.9-93.8%) - consistent stress signals
+3. Baseline stability pattern - typical earnings call communication pattern
+4. Rating affirmation followed this earnings call - stable financial outcomes
+5. Highest vocal stress detected at 0-10s (F0 CV: 0.505)

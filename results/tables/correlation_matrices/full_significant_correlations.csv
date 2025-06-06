@@ -1,0 +1,15 @@
+feature1,feature2,correlation,p_value,is_significant
+sentiment_negative,sentiment_neutral,-0.9920611908973249,2.3858669510046063e-19,True
+sentiment_neutral,sentiment_negative,-0.9920611908973249,2.3858669510046063e-19,True
+is_downgrade,is_affirm,-0.7977240352174656,0.00013786810113365655,True
+is_affirm,is_downgrade,-0.7977240352174656,0.00013786810113365655,True
+sentiment_negative,sentiment_variability,-0.7462032324791784,0.0008586233300891953,True
+sentiment_variability,sentiment_negative,-0.7462032324791784,0.0008586233300891953,True
+sentiment_neutral,sentiment_variability,0.6911657816227011,0.0041895961939180295,True
+sentiment_variability,sentiment_neutral,0.6911657816227011,0.0041895961939180295,True
+f0_cv,pause_frequency,0.6474988821750182,0.010335791486642992,True
+pause_frequency,f0_cv,0.6474988821750182,0.010335791486642992,True
+sentiment_positive,sentiment_variability,0.6441410952861558,0.010335791486642992,True
+sentiment_variability,sentiment_positive,0.6441410952861558,0.010335791486642992,True
+f0_cv,jitter_local,0.5937646849134338,0.028878702445187435,True
+jitter_local,f0_cv,0.5937646849134338,0.028878702445187435,True

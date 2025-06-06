@@ -1,0 +1,100 @@
+{
+  "Basic Materials": {
+    "n_calls": 4,
+    "sentiment_negative_mean": 0.6113386480620827,
+    "sentiment_negative_std": 0.1855953178775497,
+    "sentiment_positive_mean": 0.031892866347452614,
+    "sentiment_neutral_mean": 0.35676848400651917,
+    "sentiment_variability_mean": 0.32316822253787725,
+    "dominant_sentiment_distribution": {
+      "negative": 3,
+      "neutral": 1
+    }
+  },
+  "Utilities": {
+    "n_calls": 5,
+    "sentiment_negative_mean": 0.7306997453008635,
+    "sentiment_negative_std": 0.24739668682147556,
+    "sentiment_positive_mean": 0.007643064375908161,
+    "sentiment_neutral_mean": 0.2616571907071167,
+    "sentiment_variability_mean": 0.24411921201119574,
+    "dominant_sentiment_distribution": {
+      "negative": 4,
+      "neutral": 1
+    }
+  },
+  "Consumer Goods": {
+    "n_calls": 3,
+    "sentiment_negative_mean": 0.5299943479894021,
+    "sentiment_negative_std": 0.156968784041638,
+    "sentiment_positive_mean": 0.030892147994569557,
+    "sentiment_neutral_mean": 0.43911350678249744,
+    "sentiment_variability_mean": 0.33665928549562346,
+    "dominant_sentiment_distribution": {
+      "negative": 2,
+      "neutral": 1
+    }
+  },
+  "Industrial Goods": {
+    "n_calls": 4,
+    "sentiment_negative_mean": 0.4464913400398942,
+    "sentiment_negative_std": 0.14740503450785944,
+    "sentiment_positive_mean": 0.039017206024399016,
+    "sentiment_neutral_mean": 0.5144914517394863,
+    "sentiment_variability_mean": 0.34882967608063736,
+    "dominant_sentiment_distribution": {
+      "negative": 2,
+      "neutral": 2
+    }
+  },
+  "Services": {
+    "n_calls": 1,
+    "sentiment_negative_mean": 0.48890816509848434,
+    "sentiment_negative_std": 0.0,
+    "sentiment_positive_mean": 0.0001456904631968786,
+    "sentiment_neutral_mean": 0.5109461321886201,
+    "sentiment_variability_mean": 0.32842323772077775,
+    "dominant_sentiment_distribution": {
+      "neutral": 1
+    }
+  },
+  "Financial": {
+    "n_calls": 3,
+    "sentiment_negative_mean": 0.6529108731333974,
+    "sentiment_negative_std": 0.12528631790903727,
+    "sentiment_positive_mean": 0.025618907610082304,
+    "sentiment_neutral_mean": 0.3214702243941154,
+    "sentiment_variability_mean": 0.311262326591102,
+    "dominant_sentiment_distribution": {
+      "negative": 3
+    }
+  },
+  "Conglomerate": {
+    "n_calls": 3,
+    "sentiment_negative_mean": 0.39396355023671675,
+    "sentiment_negative_std": 0.10068632441292913,
+    "sentiment_positive_mean": 0.0443002537028695,
+    "sentiment_neutral_mean": 0.56173619661651,
+    "sentiment_variability_mean": 0.3453408679289193,
+    "dominant_sentiment_distribution": {
+      "neutral": 2,
+      "negative": 1
+    }
+  },
+  "Healthcare": {
+    "n_calls": 1,
+    "sentiment_negative_mean": 0.4815742853794509,
+    "sentiment_negative_std": 0.0,
+    "sentiment_positive_mean": 0.00022390151031717123,
+    "sentiment_neutral_mean": 0.5182018271365088,
+    "sentiment_variability_mean": 0.31241570330897445,
+    "dominant_sentiment_distribution": {
+      "neutral": 1
+    }
+  },
+  "summary": {
+    "most_negative_sector": "Utilities",
+    "most_variable_sector": "Industrial Goods",
+    "sector_differences_detected": true
+  }
+}

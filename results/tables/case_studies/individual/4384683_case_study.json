@@ -1,0 +1,217 @@
+{
+  "file_id": "4384683",
+  "metadata": {
+    "sector": "Unknown",
+    "duration_s": null,
+    "rating_outcome": "downgrade",
+    "time_gap_days": 210,
+    "rating_change_magnitude": -1,
+    "communication_pattern": "moderate_stress",
+    "nearest_action_agency": "S&P Global",
+    "earnings_call_date": 44040
+  },
+  "acoustic_features": {
+    "f0_cv": 0.2372884737488299,
+    "f0_std": 1.0,
+    "jitter_local": 0.3815094136392494,
+    "speech_rate": 1.0,
+    "pause_frequency": 0.507200255680412,
+    "acoustic_volatility_index": 0.932887651702643
+  },
+  "semantic_features": {
+    "sentiment_positive": 0.0163185538774058,
+    "sentiment_negative": 0.698682311506293,
+    "sentiment_neutral": 0.3267497743659355,
+    "sentiment_variability": 0.4404542543611458
+  },
+  "combined_features": {
+    "acoustic_semantic_alignment": 0.76579465980365
+  },
+  "rating_data": {
+    "composite_outcome": "downgrade",
+    "sp_action": "downgrade",
+    "moodys_action": "downgrade",
+    "fitch_action": "unrated",
+    "time_gap_days": 210,
+    "rating_change_magnitude": -1,
+    "agency_count": 2,
+    "disagreement_flag": 0,
+    "consensus_strength": 1.0,
+    "information_content": 1
+  },
+  "percentile_rankings": {
+    "f0_cv": 41.66666666666667,
+    "f0_std": 100.0,
+    "jitter_local": 45.83333333333333,
+    "speech_rate": 100.0,
+    "pause_frequency": 45.83333333333333,
+    "acoustic_volatility_index": 75.0,
+    "sentiment_positive": 25.0,
+    "sentiment_negative": 79.16666666666666,
+    "sentiment_neutral": 25.0,
+    "sentiment_variability": 20.833333333333336,
+    "acoustic_semantic_alignment": 54.166666666666664
+  },
+  "percentile_rankings_ci": {
+    "f0_cv": {
+      "ci_lower": 27.083333333333332,
+      "ci_upper": 56.25,
+      "ci_width": 29.166666666666668
+    },
+    "f0_std": {
+      "ci_lower": 100.0,
+      "ci_upper": 100.0,
+      "ci_width": 0.0
+    },
+    "jitter_local": {
+      "ci_lower": 31.25,
+      "ci_upper": 60.416666666666664,
+      "ci_width": 29.166666666666664
+    },
+    "speech_rate": {
+      "ci_lower": 100.0,
+      "ci_upper": 100.0,
+      "ci_width": 0.0
+    },
+    "pause_frequency": {
+      "ci_lower": 31.25,
+      "ci_upper": 60.416666666666664,
+      "ci_width": 29.166666666666664
+    },
+    "acoustic_volatility_index": {
+      "ci_lower": 62.5,
+      "ci_upper": 87.5,
+      "ci_width": 25.0
+    },
+    "sentiment_positive": {
+      "ci_lower": 12.5,
+      "ci_upper": 37.5,
+      "ci_width": 25.0
+    },
+    "sentiment_negative": {
+      "ci_lower": 66.66666666666666,
+      "ci_upper": 89.58333333333334,
+      "ci_width": 22.916666666666686
+    },
+    "sentiment_neutral": {
+      "ci_lower": 12.5,
+      "ci_upper": 37.5,
+      "ci_width": 25.0
+    },
+    "sentiment_variability": {
+      "ci_lower": 10.416666666666668,
+      "ci_upper": 33.33333333333333,
+      "ci_width": 22.91666666666666
+    },
+    "acoustic_semantic_alignment": {
+      "ci_lower": 39.58333333333333,
+      "ci_upper": 68.75,
+      "ci_width": 29.16666666666667
+    }
+  },
+  "audio_metadata": {
+    "original_sr": 24000,
+    "duration_s": 1476.7375,
+    "vad_ratio": 0.6224310140511258,
+    "peak_amplitude": 0.95,
+    "rms_energy": 0.0513618733186638,
+    "num_speakers": 9
+  },
+  "audio_analysis": {
+    "high_variability_segments": [
+      {
+        "f0_mean": 160.20486758082288,
+        "f0_std": 69.29075575330987,
+        "f0_cv": 0.4325134235909086,
+        "speech_rate": 2.6041666666666665,
+        "voice_activity_ratio": 0.6869009584664537,
+        "pause_ratio": 0.3130990415335463,
+        "spectral_centroid_mean": 1008.5654768603947,
+        "spectral_centroid_std": 401.4219724663097,
+        "rms_energy": 0.040944963693618774,
+        "start_time": 40,
+        "end_time": 50,
+        "segment_id": 4
+      },
+      {
+        "f0_mean": 191.92778964039152,
+        "f0_std": 78.7732672228766,
+        "f0_cv": 0.4104317950541261,
+        "speech_rate": 2.0833333333333335,
+        "voice_activity_ratio": 0.7092651757188498,
+        "pause_ratio": 0.29073482428115016,
+        "spectral_centroid_mean": 1050.381343951596,
+        "spectral_centroid_std": 408.7292204540595,
+        "rms_energy": 0.05470845475792885,
+        "start_time": 0,
+        "end_time": 10,
+        "segment_id": 0
+      },
+      {
+        "f0_mean": 210.69870624619188,
+        "f0_std": 51.42406404041254,
+        "f0_cv": 0.24406445087672182,
+        "speech_rate": 2.0833333333333335,
+        "voice_activity_ratio": 0.6357827476038339,
+        "pause_ratio": 0.3642172523961661,
+        "spectral_centroid_mean": 1130.6168162826316,
+        "spectral_centroid_std": 335.19607121940504,
+        "rms_energy": 0.050242334604263306,
+        "start_time": 10,
+        "end_time": 20,
+        "segment_id": 1
+      }
+    ],
+    "low_variability_segments": [
+      {
+        "f0_mean": 149.64258161612614,
+        "f0_std": 18.872165958708255,
+        "f0_cv": 0.12611494505701917,
+        "speech_rate": 1.953125,
+        "voice_activity_ratio": 0.7635782747603834,
+        "pause_ratio": 0.23642172523961658,
+        "spectral_centroid_mean": 1119.7532768004824,
+        "spectral_centroid_std": 416.22214330215684,
+        "rms_energy": 0.042680978775024414,
+        "start_time": 30,
+        "end_time": 40,
+        "segment_id": 3
+      },
+      {
+        "f0_mean": 196.86095033886355,
+        "f0_std": 24.38696237862065,
+        "f0_cv": 0.1238791255281585,
+        "speech_rate": 2.4038461538461537,
+        "voice_activity_ratio": 0.7795527156549521,
+        "pause_ratio": 0.2204472843450479,
+        "spectral_centroid_mean": 994.1730564491148,
+        "spectral_centroid_std": 400.3131363525007,
+        "rms_energy": 0.04381314292550087,
+        "start_time": 90,
+        "end_time": 100,
+        "segment_id": 9
+      },
+      {
+        "f0_mean": 151.16900173064656,
+        "f0_std": 17.971848864849292,
+        "f0_cv": 0.11888580766625419,
+        "speech_rate": 2.6041666666666665,
+        "voice_activity_ratio": 0.7539936102236422,
+        "pause_ratio": 0.2460063897763578,
+        "spectral_centroid_mean": 1104.5091267958214,
+        "spectral_centroid_std": 361.8374250243368,
+        "rms_energy": 0.04856054112315178,
+        "start_time": 20,
+        "end_time": 30,
+        "segment_id": 2
+      }
+    ],
+    "num_segments_analyzed": 10
+  },
+  "insights": [
+    "Elevated negative sentiment: 79.2% (95% CI: 66.7-89.6%) - indicates potential concerns",
+    "Moderate stress pattern detected - some stress indicators present",
+    "Rating downgrade followed this earnings call - negative financial outcomes",
+    "Highest vocal stress detected at 40-50s (F0 CV: 0.433)"
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "group_metrics": {
+    "affirm": {
+      "count": 6,
+      "acoustic_features": {
+        "f0_cv": 0.7379409643555298,
+        "f0_std": 0.7346203781309536,
+        "jitter_local": 0.3902471277315101,
+        "speech_rate": 0.633966833241478,
+        "pause_frequency": 0.5400209050101054,
+        "acoustic_volatility_index": 0.5947912996967241
+      },
+      "semantic_features": {
+        "sentiment_positive": 0.35758195598585946,
+        "sentiment_negative": 0.5605004090893133,
+        "sentiment_neutral": 0.4311324046971628,
+        "sentiment_variability": 0.5562269235731717
+      },
+      "combined_features": {
+        "acoustic_semantic_alignment": 0.5872833606620076
+      },
+      "percentile_rankings": {
+        "f0_cv": 72.22222222222221,
+        "f0_std": 70.13888888888889,
+        "jitter_local": 45.833333333333336,
+        "speech_rate": 68.05555555555556,
+        "pause_frequency": 52.77777777777778,
+        "acoustic_volatility_index": 70.83333333333333,
+        "sentiment_positive": 56.94444444444445,
+        "sentiment_negative": 58.333333333333336,
+        "sentiment_neutral": 41.666666666666664,
+        "sentiment_variability": 54.16666666666668,
+        "acoustic_semantic_alignment": 52.08333333333334
+      }
+    },
+    "downgrade": {
+      "count": 2,
+      "acoustic_features": {
+        "f0_cv": 0.22308631565236026,
+        "f0_std": 0.5,
+        "jitter_local": 0.39435116703881656,
+        "speech_rate": 0.5771489808976185,
+        "pause_frequency": 0.753600127840206,
+        "acoustic_volatility_index": 0.4664438258513215
+      },
+      "semantic_features": {
+        "sentiment_positive": 0.20717563968290087,
+        "sentiment_negative": 0.5700991049730422,
+        "sentiment_neutral": 0.44105115400868966,
+        "sentiment_variability": 0.6704118838161695
+      },
+      "combined_features": {
+        "acoustic_semantic_alignment": 0.6621393806819293
+      },
+      "percentile_rankings": {
+        "f0_cv": 39.583333333333336,
+        "f0_std": 62.5,
+        "jitter_local": 47.916666666666664,
+        "speech_rate": 66.66666666666666,
+        "pause_frequency": 72.91666666666666,
+        "acoustic_volatility_index": 50.0,
+        "sentiment_positive": 50.0,
+        "sentiment_negative": 66.66666666666666,
+        "sentiment_neutral": 37.5,
+        "sentiment_variability": 58.33333333333334,
+        "acoustic_semantic_alignment": 50.0
+      }
+    },
+    "upgrade": {
+      "count": 2,
+      "acoustic_features": {
+        "f0_cv": 1.0,
+        "f0_std": 1.0,
+        "jitter_local": 1.0,
+        "speech_rate": 0.7209192928567063,
+        "pause_frequency": 1.0,
+        "acoustic_volatility_index": 0.208659575558965
+      },
+      "semantic_features": {
+        "sentiment_positive": 0.0968242942261462,
+        "sentiment_negative": 0.9221655840413698,
+        "sentiment_neutral": 0.0722272080905691,
+        "sentiment_variability": 0.2448439364528232
+      },
+      "combined_features": {
+        "acoustic_semantic_alignment": 0.2864939915175951
+      },
+      "percentile_rankings": {
+        "f0_cv": 100.0,
+        "f0_std": 100.0,
+        "jitter_local": 100.0,
+        "speech_rate": 66.66666666666666,
+        "pause_frequency": 100.0,
+        "acoustic_volatility_index": 41.66666666666667,
+        "sentiment_positive": 33.33333333333333,
+        "sentiment_negative": 91.66666666666666,
+        "sentiment_neutral": 12.5,
+        "sentiment_variability": 12.5,
+        "acoustic_semantic_alignment": 12.5
+      }
+    }
+  },
+  "effect_sizes": {
+    "downgrade_vs_affirm": {
+      "f0_cv": -1.5319827350867883,
+      "f0_std": -0.5974255625181057,
+      "jitter_local": 0.010679769132661977,
+      "speech_rate": -0.12297557359616647,
+      "pause_frequency": 0.5021720233353403,
+      "acoustic_volatility_index": -0.2509814770250718,
+      "sentiment_positive": -0.4662371105946756,
+      "sentiment_negative": 0.029476189397204724,
+      "sentiment_neutral": 0.030393422385115963,
+      "sentiment_variability": 0.2947200856467954,
+      "acoustic_semantic_alignment": 0.19685321297724287
+    },
+    "upgrade_vs_affirm": {
+      "f0_cv": 0.7800055167850075,
+      "f0_std": 0.9966900011159634,
+      "jitter_local": 1.5870297007068874,
+      "speech_rate": 0.22167142980717292,
+      "pause_frequency": 1.1476128971946846,
+      "acoustic_volatility_index": -0.8882142984713773,
+      "sentiment_positive": -0.8600377561295444,
+      "sentiment_negative": 1.1406570984452344,
+      "sentiment_neutral": -1.1229707414385004,
+      "sentiment_variability": -0.8555018036659857,
+      "acoustic_semantic_alignment": -0.8009848729036543
+    },
+    "downgrade_vs_upgrade": {
+      "f0_cv": -54.703917465949345,
+      "f0_std": -1.0,
+      "jitter_local": -47.16247183048992,
+      "speech_rate": -0.34000228322561493,
+      "pause_frequency": -0.9999999999999999,
+      "acoustic_volatility_index": 0.5526587254571679,
+      "sentiment_positive": 0.5781883601073903,
+      "sentiment_negative": -2.738044014925739,
+      "sentiment_neutral": 3.226767227752365,
+      "sentiment_variability": 1.8506363471040266,
+      "acoustic_semantic_alignment": 3.62398704964385
+    }
+  }
+}

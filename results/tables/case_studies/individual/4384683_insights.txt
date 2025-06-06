@@ -1,0 +1,7 @@
+INSIGHTS FOR CASE STUDY: 4384683
+============================================================
+
+1. Elevated negative sentiment: 79.2% (95% CI: 66.7-89.6%) - indicates potential concerns
+2. Moderate stress pattern detected - some stress indicators present
+3. Rating downgrade followed this earnings call - negative financial outcomes
+4. Highest vocal stress detected at 40-50s (F0 CV: 0.433)

@@ -1,0 +1,212 @@
+{
+  "4368670": {
+    "file_id": "4368670",
+    "rating_outcome": "upgrade",
+    "acoustic_features": {
+      "f0_cv": {
+        "value": 1.0,
+        "percentile": 88.09523809523809,
+        "percentile_ci": [
+          78.57142857142857,
+          95.23809523809523
+        ]
+      },
+      "jitter_local": {
+        "value": 1.0,
+        "percentile": 88.09523809523809,
+        "percentile_ci": [
+          78.57142857142857,
+          95.23809523809523
+        ]
+      },
+      "pause_frequency": {
+        "value": 1.0,
+        "percentile": 90.47619047619048,
+        "percentile_ci": [
+          80.95238095238095,
+          97.61904761904762
+        ]
+      },
+      "acoustic_volatility_index": {
+        "value": 0.208659575558965,
+        "percentile": 38.095238095238095,
+        "percentile_ci": [
+          19.047619047619047,
+          57.14285714285714
+        ]
+      }
+    },
+    "semantic_features": {
+      "sentiment_negative": {
+        "value": 0.9221655840413698,
+        "percentile": 90.47619047619048,
+        "percentile_ci": [
+          76.19047619047619,
+          100.0
+        ]
+      },
+      "sentiment_positive": {
+        "value": 0.0968242942261462,
+        "percentile": 28.57142857142857,
+        "percentile_ci": [
+          9.523809523809524,
+          47.61904761904761
+        ]
+      },
+      "sentiment_variability": {
+        "value": 0.2448439364528232,
+        "percentile": 9.523809523809524,
+        "percentile_ci": [
+          0.0,
+          23.809523809523807
+        ]
+      }
+    },
+    "combined_features": {
+      "acoustic_semantic_alignment": {
+        "value": 0.2864939915175951
+      }
+    },
+    "communication_pattern": "mixed_pattern"
+  },
+  "4346923": {
+    "file_id": "4346923",
+    "rating_outcome": "downgrade",
+    "acoustic_features": {
+      "f0_cv": {
+        "value": 0.2088841575558906,
+        "percentile": 38.095238095238095,
+        "percentile_ci": [
+          19.047619047619047,
+          57.14285714285714
+        ]
+      },
+      "jitter_local": {
+        "value": 0.4071929204383837,
+        "percentile": 47.61904761904761,
+        "percentile_ci": [
+          28.57142857142857,
+          66.66666666666666
+        ]
+      },
+      "pause_frequency": {
+        "value": 1.0,
+        "percentile": 90.47619047619048,
+        "percentile_ci": [
+          80.95238095238095,
+          97.61904761904762
+        ]
+      },
+      "acoustic_volatility_index": {
+        "value": 0.0,
+        "percentile": 11.904761904761903,
+        "percentile_ci": [
+          4.761904761904762,
+          21.428571428571427
+        ]
+      }
+    },
+    "semantic_features": {
+      "sentiment_negative": {
+        "value": 0.4415158984397913,
+        "percentile": 57.14285714285714,
+        "percentile_ci": [
+          38.095238095238095,
+          76.19047619047619
+        ]
+      },
+      "sentiment_positive": {
+        "value": 0.3980327254883959,
+        "percentile": 71.42857142857143,
+        "percentile_ci": [
+          52.38095238095239,
+          90.47619047619048
+        ]
+      },
+      "sentiment_variability": {
+        "value": 0.9003695132711931,
+        "percentile": 95.23809523809523,
+        "percentile_ci": [
+          85.71428571428571,
+          100.0
+        ]
+      }
+    },
+    "combined_features": {
+      "acoustic_semantic_alignment": {
+        "value": 0.5584841015602087
+      }
+    },
+    "communication_pattern": "baseline_stability"
+  },
+  "4384683": {
+    "file_id": "4384683",
+    "rating_outcome": "downgrade",
+    "acoustic_features": {
+      "f0_cv": {
+        "value": 0.2372884737488299,
+        "percentile": 38.095238095238095,
+        "percentile_ci": [
+          19.047619047619047,
+          57.14285714285714
+        ]
+      },
+      "jitter_local": {
+        "value": 0.3815094136392494,
+        "percentile": 47.61904761904761,
+        "percentile_ci": [
+          28.57142857142857,
+          66.66666666666666
+        ]
+      },
+      "pause_frequency": {
+        "value": 0.507200255680412,
+        "percentile": 47.61904761904761,
+        "percentile_ci": [
+          28.57142857142857,
+          66.66666666666666
+        ]
+      },
+      "acoustic_volatility_index": {
+        "value": 0.932887651702643,
+        "percentile": 71.42857142857143,
+        "percentile_ci": [
+          52.38095238095239,
+          90.47619047619048
+        ]
+      }
+    },
+    "semantic_features": {
+      "sentiment_negative": {
+        "value": 0.698682311506293,
+        "percentile": 80.95238095238095,
+        "percentile_ci": [
+          61.904761904761905,
+          95.23809523809523
+        ]
+      },
+      "sentiment_positive": {
+        "value": 0.0163185538774058,
+        "percentile": 23.809523809523807,
+        "percentile_ci": [
+          4.761904761904762,
+          42.857142857142854
+        ]
+      },
+      "sentiment_variability": {
+        "value": 0.4404542543611458,
+        "percentile": 14.285714285714285,
+        "percentile_ci": [
+          0.0,
+          28.57142857142857
+        ]
+      }
+    },
+    "combined_features": {
+      "acoustic_semantic_alignment": {
+        "value": 0.76579465980365
+      }
+    },
+    "communication_pattern": "moderate_stress"
+  }
+}

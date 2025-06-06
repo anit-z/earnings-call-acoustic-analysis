@@ -1,0 +1,3 @@
+Group,N,Pattern,Strength,Acoustic Percentile,Semantic Percentile,Acoustic Effect Size,Semantic Effect Size,Confidence
+upgrade,1,divergent_semantic_stress,strong,38.095238095238095,90.47619047619048,-0.5879552036576734,1.760223768839705,low
+downgrade,2,mixed_pattern,moderate,41.666666666666664,69.04761904761904,0.05910311983644604,0.44977091378319406,low
