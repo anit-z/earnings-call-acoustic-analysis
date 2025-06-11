@@ -23,10 +23,10 @@ logs/
 *.log
 
 # Results (keep only final)
-results/figures/*.png
-results/tables/*.csv
-!results/figures/final_*
-!results/tables/final_*
+#results/figures/*.png
+#results/tables/*.csv
+#!results/figures/final_*
+#!results/tables/final_*
 
 # Model files
 *.pkl

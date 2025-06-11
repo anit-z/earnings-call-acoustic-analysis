@@ -19,10 +19,6 @@ from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
 
-# Add project root to path
-sys.path.append(str(Path(__file__).parent.parent.parent))
-from config.settings import PROJECT_ROOT
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -33,9 +29,16 @@ class TranscriptProcessor:
     Enhanced with A2/B1 demonstrator requirements
     """
     
-    def __init__(self):
-        # Use relative paths from project root
-        self.project_root = PROJECT_ROOT
+    def __init__(self, project_root: Optional[Path] = None):
+        # Determine project root based on script location or provided path
+        if project_root:
+            self.project_root = Path(project_root)
+        else:
+            # Script is at src/preprocessing/text_processing/prepare_transcripts.py
+            # So project root is 3 levels up
+            self.project_root = Path(__file__).resolve().parent.parent.parent.parent
+        
+        # Define all paths relative to project root
         self.nlp_ref_dir = self.project_root / "data" / "raw" / "earnings21" / "transcripts" / "nlp_references"
         self.norm_dir = self.project_root / "data" / "raw" / "earnings21" / "transcripts" / "normalizations"
         self.wer_tag_dir = self.project_root / "data" / "raw" / "earnings21" / "transcripts" / "wer_tags"
@@ -63,6 +66,8 @@ class TranscriptProcessor:
         # Bootstrap parameters
         self.n_bootstrap = 1000
         
+        logger.info(f"TranscriptProcessor initialized with project root: {self.project_root}")
+        
     def _init_finbert(self):
         """Initialize FinBERT model for sentiment analysis."""
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -74,7 +79,8 @@ class TranscriptProcessor:
         self.model.to(self.device)
         self.model.eval()
         
-        self.sentiment_labels = ['positive', 'negative', 'neutral']
+        # Corrected sentiment labels order for yiyanghkust/finbert-tone
+        self.sentiment_labels = ['negative', 'neutral', 'positive']
         self.max_sequence_length = 512
         
     def _load_speaker_metadata(self) -> pd.DataFrame:
@@ -327,17 +333,17 @@ class TranscriptProcessor:
         if not chunk_sentiments:
             return {}
         
-        # Extract sentiment arrays
-        positive_scores = [s['positive'] for s in chunk_sentiments]
+        # Extract sentiment arrays (corrected indices for finbert-tone)
         negative_scores = [s['negative'] for s in chunk_sentiments]
         neutral_scores = [s['neutral'] for s in chunk_sentiments]
+        positive_scores = [s['positive'] for s in chunk_sentiments]
         
         ci_results = {}
         
         # Bootstrap for each sentiment type
-        for sentiment_type, scores in [('positive', positive_scores), 
-                                       ('negative', negative_scores), 
-                                       ('neutral', neutral_scores)]:
+        for sentiment_type, scores in [('negative', negative_scores), 
+                                       ('neutral', neutral_scores),
+                                       ('positive', positive_scores)]:
             
             bootstrap_means = []
             for _ in range(n_bootstrap):
@@ -365,6 +371,11 @@ class TranscriptProcessor:
         nlp_path = self.nlp_ref_dir / f"{file_id}.nlp"
         norm_path = self.norm_dir / f"{file_id}.norm.json"
         wer_path = self.wer_tag_dir / f"{file_id}.wer_tag.json"
+        
+        # Check if files exist
+        if not nlp_path.exists():
+            logger.error(f"NLP file not found: {nlp_path}")
+            raise FileNotFoundError(f"NLP file not found: {nlp_path}")
         
         # Load data
         tokens = self.load_nlp_file(nlp_path)
@@ -522,29 +533,30 @@ class TranscriptProcessor:
                 scores = predictions.cpu().numpy()[0]
                 
                 all_scores.append(scores)
+                # Corrected indices for finbert-tone model
                 chunk_sentiments.append({
-                    'positive': float(scores[0]),
-                    'negative': float(scores[1]),
-                    'neutral': float(scores[2])
+                    'negative': float(scores[0]),  # Index 0 = negative
+                    'neutral': float(scores[1]),   # Index 1 = neutral
+                    'positive': float(scores[2])   # Index 2 = positive
                 })
         
         # Aggregate sentiment metrics
         scores_array = np.array(all_scores)
         
         sentiment_results = {
-            # Mean sentiments
-            'sentiment_positive_mean': float(np.mean(scores_array[:, 0])),
-            'sentiment_negative_mean': float(np.mean(scores_array[:, 1])),
-            'sentiment_neutral_mean': float(np.mean(scores_array[:, 2])),
+            # Mean sentiments (corrected indices)
+            'sentiment_negative_mean': float(np.mean(scores_array[:, 0])),
+            'sentiment_neutral_mean': float(np.mean(scores_array[:, 1])),
+            'sentiment_positive_mean': float(np.mean(scores_array[:, 2])),
             
             # Standard deviations (variability)
-            'sentiment_positive_std': float(np.std(scores_array[:, 0])),
-            'sentiment_negative_std': float(np.std(scores_array[:, 1])),
-            'sentiment_neutral_std': float(np.std(scores_array[:, 2])),
+            'sentiment_negative_std': float(np.std(scores_array[:, 0])),
+            'sentiment_neutral_std': float(np.std(scores_array[:, 1])),
+            'sentiment_positive_std': float(np.std(scores_array[:, 2])),
             
             # Extreme percentiles
-            'sentiment_positive_p95': float(np.percentile(scores_array[:, 0], 95)),
-            'sentiment_negative_p95': float(np.percentile(scores_array[:, 1], 95)),
+            'sentiment_negative_p95': float(np.percentile(scores_array[:, 0], 95)),
+            'sentiment_positive_p95': float(np.percentile(scores_array[:, 2], 95)),
             
             # Overall metrics
             'sentiment_dominant': self.sentiment_labels[np.argmax(np.mean(scores_array, axis=0))],
@@ -614,7 +626,7 @@ class TranscriptProcessor:
             second_sentiment = self.analyze_call_sentiment(second_text)
             
             # Calculate changes
-            for sentiment_type in ['positive', 'negative', 'neutral']:
+            for sentiment_type in ['negative', 'neutral', 'positive']:
                 key = f'sentiment_{sentiment_type}_mean'
                 if key in first_sentiment and key in second_sentiment:
                     change = second_sentiment[key] - first_sentiment[key]
@@ -956,7 +968,21 @@ class TranscriptProcessor:
 
 
 def main():
-    processor = TranscriptProcessor()
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description="Process earnings call transcripts for analysis"
+    )
+    parser.add_argument(
+        "--project-root",
+        type=str,
+        help="Project root directory (default: auto-detect from script location)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Initialize processor with optional project root
+    processor = TranscriptProcessor(project_root=args.project_root)
     processor.process_all_calls()
 
 

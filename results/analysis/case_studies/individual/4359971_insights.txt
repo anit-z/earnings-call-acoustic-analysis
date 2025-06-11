@@ -1,0 +1,8 @@
+INSIGHTS FOR CASE STUDY: 4359971
+============================================================
+
+1. Elevated F0 coefficient of variation: 87.5% (95% CI: 81.2-93.8%) (MAD effect: 1.03) - suggests moderate vocal stress
+2. Low acoustic-semantic alignment: 14.6% (95% CI: 6.2-25.0%) - divergent stress indicators
+3. Moderate excitement pattern detected - mild positive arousal indicators
+4. Rating affirmation followed this earnings call - stable financial outcomes
+5. Highest vocal stress detected at 30-40s (F0 CV: 0.448)

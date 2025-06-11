@@ -1,0 +1,3 @@
+Group,N,Pattern,Strength,F0_CV Percentile,Semantic Percentile,F0_CV Effect Size,F0_CV MAD Effect,Semantic Effect Size,Semantic MAD Effect,Confidence
+upgrade,1,convergent_stress,moderate,88.09523809523809,90.47619047619048,1.2767249627804906,1.0,1.760223768839705,3.3700350819073503,low
+downgrade,2,mixed_pattern,moderate,38.095238095238095,69.04761904761904,-0.6480210909982748,-0.5538273686952795,0.44977091378319406,1.180368438731439,low

@@ -109,12 +109,25 @@ class CallLevelFinBERTAnalyzer:
     def _load_sector_mappings(self) -> Dict[str, str]:
         """Load sector mappings for stratified analysis"""
         try:
-            metadata_path = Path("data/raw/earnings21/earnings21-file-metadata.csv")
-            if metadata_path.exists():
+            # Try multiple possible locations for the metadata file
+            possible_paths = [
+                Path("data/raw/earnings21/earnings21-file-metadata.csv"),  # From project root
+                Path(__file__).parent.parent.parent / "data" / "raw" / "earnings21" / "earnings21-file-metadata.csv",  # Relative to script
+                Path.cwd() / "data" / "raw" / "earnings21" / "earnings21-file-metadata.csv"  # From current directory
+            ]
+            
+            metadata_path = None
+            for path in possible_paths:
+                if path.exists():
+                    metadata_path = path
+                    break
+            
+            if metadata_path and metadata_path.exists():
                 df = pd.read_csv(metadata_path)
+                logger.info(f"Loaded sector mappings from {metadata_path}")
                 return dict(zip(df['file_id'].astype(str), df['sector']))
             else:
-                logger.warning("Sector metadata not found")
+                logger.warning("Sector metadata not found in any expected location")
                 return {}
         except Exception as e:
             logger.error(f"Error loading sector mappings: {e}")
@@ -131,6 +144,9 @@ class CallLevelFinBERTAnalyzer:
             Dictionary with sentiment analysis results
         """
         try:
+            # Convert to Path object for consistent handling
+            transcript_path = Path(transcript_path)
+            
             # Load transcript
             with open(transcript_path, 'r', encoding='utf-8') as f:
                 transcript_data = json.load(f)
@@ -142,7 +158,7 @@ class CallLevelFinBERTAnalyzer:
                 # Fallback to concatenating tokens if needed
                 call_text = self._reconstruct_text_from_tokens(transcript_data)
             
-            file_id = transcript_data.get('file_id', Path(transcript_path).stem)
+            file_id = transcript_data.get('file_id', transcript_path.stem)
             logger.info(f"Analyzing transcript: {file_id}")
             
             # Validate text content
@@ -573,6 +589,11 @@ class CallLevelFinBERTAnalyzer:
     
     def save_results(self, results: Dict, output_path: str):
         """Save sentiment analysis results"""
+        output_path = Path(output_path)
+        
+        # Create output directory if it doesn't exist
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
         with open(output_path, 'w', encoding='utf-8') as f:
             # Remove chunk-level details for main save (too verbose)
             save_data = {k: v for k, v in results.items() 
@@ -581,7 +602,7 @@ class CallLevelFinBERTAnalyzer:
         
         # Save chunk details separately if needed
         if 'chunk_sentiments' in results:
-            chunk_path = output_path.replace('.json', '_chunks.json')
+            chunk_path = output_path.with_name(f"{output_path.stem}_chunks.json")
             with open(chunk_path, 'w', encoding='utf-8') as f:
                 json.dump({
                     'file_id': results['file_id'],
@@ -595,6 +616,9 @@ class CallLevelFinBERTAnalyzer:
         """
         Create visualizations for sentiment analysis results
         """
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
         # Check if we have valid data
         if len(sentiment_results) == 0:
             logger.error("No sentiment results available for visualization")
@@ -684,7 +708,7 @@ class CallLevelFinBERTAnalyzer:
             ax.set_title('Distribution of Dominant Sentiments')
         
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'sentiment_analysis_summary.png'), 
+        plt.savefig(output_dir / 'sentiment_analysis_summary.png', 
                    dpi=300, bbox_inches='tight')
         plt.close()
         
@@ -706,18 +730,22 @@ def main():
     
     args = parser.parse_args()
     
+    # Convert to Path objects for consistent handling
+    transcript_dir = Path(args.transcript_dir)
+    output_dir = Path(args.output_dir)
+    
     # Initialize analyzer
     analyzer = CallLevelFinBERTAnalyzer()
     
     # Create output directory
-    os.makedirs(args.output_dir, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     # Get transcript files
-    transcript_files = list(Path(args.transcript_dir).glob("*_call_level.json"))
+    transcript_files = list(transcript_dir.glob("*_call_level.json"))
     logger.info(f"Found {len(transcript_files)} transcript files to analyze")
     
     if len(transcript_files) == 0:
-        logger.error(f"No transcript files found in {args.transcript_dir}")
+        logger.error(f"No transcript files found in {transcript_dir}")
         logger.error("Expected files with pattern: *_call_level.json")
         return
     
@@ -733,7 +761,7 @@ def main():
             successful_analyses += 1
             
             # Save individual results
-            output_path = Path(args.output_dir) / f"{results['file_id']}_sentiment.json"
+            output_path = output_dir / f"{results['file_id']}_sentiment.json"
             analyzer.save_results(results, str(output_path))
         else:
             logger.warning(f"Failed to analyze {transcript_file}: {results.get('error', 'unknown_error')}")
@@ -767,7 +795,7 @@ def main():
     
     # Save aggregate results
     results_df.to_csv(
-        Path(args.output_dir) / "all_sentiment_results.csv",
+        output_dir / "all_sentiment_results.csv",
         index=False
     )
     
@@ -775,11 +803,11 @@ def main():
     logger.info("Performing sector-stratified analysis...")
     sector_analysis = analyzer.perform_sector_stratified_analysis(results_df)
     
-    with open(Path(args.output_dir) / "sector_analysis.json", 'w') as f:
+    with open(output_dir / "sector_analysis.json", 'w') as f:
         json.dump(sector_analysis, f, indent=2)
     
     # Perform acoustic-semantic correlation if acoustic features provided
-    if args.acoustic_features and os.path.exists(args.acoustic_features):
+    if args.acoustic_features and Path(args.acoustic_features).exists():
         logger.info("Calculating acoustic-semantic correlations...")
         
         try:
@@ -789,7 +817,7 @@ def main():
             )
             
             if correlation_results:
-                with open(Path(args.output_dir) / "acoustic_semantic_correlations.json", 'w') as f:
+                with open(output_dir / "acoustic_semantic_correlations.json", 'w') as f:
                     json.dump(correlation_results, f, indent=2)
                 
                 # Log pattern classification
@@ -808,7 +836,7 @@ def main():
     # Create visualizations if requested
     if args.visualize:
         try:
-            analyzer.create_visualization(results_df, args.output_dir)
+            analyzer.create_visualization(results_df, str(output_dir))
         except Exception as e:
             logger.error(f"Error creating visualizations: {e}")
     
@@ -839,11 +867,11 @@ def main():
     if 'dominant_sentiment' in results_df.columns:
         summary['dominant_sentiments'] = results_df['dominant_sentiment'].value_counts().to_dict()
     
-    with open(Path(args.output_dir) / "sentiment_analysis_summary.json", 'w') as f:
+    with open(output_dir / "sentiment_analysis_summary.json", 'w') as f:
         json.dump(summary, f, indent=2)
     
     logger.info("FinBERT sentiment analysis complete!")
-    logger.info(f"Results saved to {args.output_dir}")
+    logger.info(f"Results saved to {output_dir}")
     
     # Print summary
     print("\n" + "="*60)

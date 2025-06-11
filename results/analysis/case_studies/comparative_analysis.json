@@ -1,0 +1,45 @@
+{
+  "group_metrics": {
+    "affirm": {
+      "count": 5,
+      "acoustic_features": {
+        "f0_cv": 0.5843945093594025,
+        "f0_std": 0.6974436082529196,
+        "pause_frequency": 0.3780812408819968,
+        "jitter_local": 0.4323747051986372
+      },
+      "semantic_features": {
+        "sentiment_positive": 0.43460875622722145,
+        "sentiment_negative": 0.4560760941246958,
+        "sentiment_neutral": 0.5345243415682812,
+        "sentiment_variability": 0.6626594616269796
+      },
+      "combined_features": {
+        "acoustic_semantic_alignment": 0.7079451993856046
+      },
+      "percentile_rankings": {
+        "f0_cv": 53.75,
+        "f0_std": 60.83333333333333,
+        "pause_frequency": 37.08333333333333,
+        "jitter_local": 44.166666666666664,
+        "sentiment_positive": 64.58333333333334,
+        "sentiment_negative": 46.25,
+        "sentiment_neutral": 48.75,
+        "sentiment_variability": 59.583333333333336,
+        "acoustic_semantic_alignment": 60.41666666666667
+      },
+      "mad_effects": {
+        "f0_cv": 0.1741486666821983,
+        "f0_std": 0.397123309380785,
+        "pause_frequency": -0.35695272216195617,
+        "jitter_local": 0.05318438385182471,
+        "sentiment_positive": 0.8932634750848798,
+        "sentiment_negative": 0.14240799503252255,
+        "sentiment_neutral": -0.1279099261335296,
+        "sentiment_variability": -0.6078737421224563,
+        "acoustic_semantic_alignment": -0.010416296854359675
+      }
+    }
+  },
+  "effect_sizes": {}
+}
