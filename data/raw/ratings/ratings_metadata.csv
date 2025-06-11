@@ -1,0 +1,25 @@
+﻿file_id,earnings_call_date,sp_action,moodys_action,fitch_action,sp_action_date,moodys_action_date,fitch_action_date,sector,time_gap_sp,time_gap_moodys,time_gap_fitch,composite_outcome,consensus_strength,agency_count,disagreement_flag,time_gap_days,nearest_action_agency,information_content,baseline_classification,case_study_flag,data_quality_flag,rating_change_magnitude,percentile_rank_f0_cv
+4382825,44133,affirm,unrated,affirm,2020/12/8,unrated,2021/1/15,Basic Materials,40,,78,affirm,1,2,0,40,S&P Global,0,baseline,0,1,0,0
+4365948,44048,unrated,affirm,unrated,unrated,2020/10/7,unrated,Basic Materials,,63,,affirm,1,1,0,63,Moody's,0,baseline,0,0,0,1
+4364366,44047,unrated,affirm,affirm,unrated,2021/3/16,2021/7/2,Basic Materials,,224,332,affirm,1,2,0,224,Moody's,0,baseline,0,1,0,0.199025198
+4384683,44040,downgrade,downgrade,unrated,2021/2/23,2021/2/23,unrated,Basic Materials,210,210,,downgrade,1,2,0,210,S&P Global,1,non-baseline,1,1,-1,0.237288474
+4397829,44203,unrated,affirm,unrated,unrated,2021/3/9,unrated,Conglomerate,,61,,affirm,1,1,0,61,Moody's,0,baseline,0,0,0,0
+4344338,43958,affirm,affirm,unrated,2021/3/24,2021/6/18,unrated,Conglomerate,321,407,,affirm,1,2,0,321,S&P Global,0,baseline,0,1,0,1
+4341191,43950,affirm,unrated,affirm,2021/3/10,unrated,2021/3/10,Conglomerate,315,,315,affirm,1,2,0,315,S&P Global,0,baseline,0,1,0,0.969223721
+4360717,44036,affirm,unrated,affirm,2021/4/19,unrated,2020/12/2,Consumer Goods,269,,131,affirm,1,2,0,131,Fitch,0,baseline,0,1,0,0
+4385939,44141,affirm,affirm,unrated,2023/5/1,2022/7/5,unrated,Consumer Goods,906,606,,affirm,1,2,0,606,Moody's,0,baseline,0,1,0,0.523520068
+4383161,44134,unrated,affirm,affirm,unrated,2021/6/22,2021/3/25,Consumer Goods,,235,146,affirm,1,2,0,146,Fitch,0,baseline,0,1,0,1
+4374910,44127,unrated,affirm,affirm,unrated,2021/8/3,2021/5/3,Financial,,284,192,affirm,1,2,0,192,Fitch,0,baseline,0,1,0,1
+4363614,44042,affirm,affirm,affirm,2021/6/24,2021/3/24,2021/6/7,Financial,329,237,312,affirm,1,3,0,237,Moody's,0,baseline,0,1,0,0.329433245
+4360366,44035,affirm,affirm,affirm,2024/6/18,2022/4/29,2021/5/5,Financial,1426,645,286,affirm,1,3,0,286,Fitch,0,baseline,0,1,0,0
+4375653,44133,affirm,unrated,affirm,2021/3/8,unrated,2021/3/8,Healthcare,130,,130,affirm,1,2,0,130,S&P Global,0,baseline,0,1,0,0.5
+4346923,43963,unrated,unrated,downgrade,unrated,unrated,2020/5/26,Industrial Goods,,,14,downgrade,1,1,0,14,Fitch,1,non-baseline,1,0,-1,0.208884158
+4359971,44034,affirm,affirm,unrated,2021/2/9,2021/5/6,unrated,Industrial Goods,202,288,,affirm,1,2,0,202,S&P Global,0,baseline,0,1,0,1
+4346818,43963,affirm,affirm,affirm,2021/3/25,2023/8/7,2023/6/12,Industrial Goods,317,1182,1126,affirm,1,3,0,317,S&P Global,0,baseline,0,1,0,0
+4384198,44117,affirm,affirm,unrated,2020/11/24,2021/2/22,unrated,Industrial Goods,42,132,,affirm,1,2,0,42,S&P Global,0,baseline,0,1,0,0.698165184
+4386541,44143,affirm,unrated,unrated,2021/3/11,unrated,unrated,Services,123,,,affirm,1,1,0,123,S&P Global,0,baseline,0,0,0,0.5
+4361631,44040,affirm,affirm,affirm,2021/2/9,2022/7/28,2020/12/30,Utilities,196,730,155,affirm,1,3,0,155,Fitch,0,baseline,0,1,0,0.091904618
+4384964,44139,affirm,affirm,affirm,2021/5/6,2021/6/14,2021/3/8,Utilities,183,222,124,affirm,1,3,0,124,Fitch,0,baseline,0,1,0,0.505673239
+4360674,44036,affirm,affirm,affirm,2021/6/14,2021/7/26,2020/10/9,Utilities,325,367,77,affirm,1,3,0,77,Fitch,0,baseline,0,1,0,0
+4368670,44057,unrated,affirm,upgrade,unrated,2021/2/11,2021/3/25,Utilities,,181,223,upgrade,0.5,2,1,181,Fitch,1,non-baseline,1,1,1,1
+4344866,43959,affirm,affirm,unrated,2023/12/21,2020/10/14,unrated,Utilities,1322,159,,affirm,1,2,0,159,Moody's,0,baseline,0,1,0,0.860844208
