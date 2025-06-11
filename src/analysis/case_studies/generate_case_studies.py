@@ -38,8 +38,9 @@ class CaseStudyGenerator:
     def __init__(self, 
                  num_case_studies: int = 5, 
                  selection_criteria: str = 'combined',
-                 n_bootstrap: int = 5000,
-                 confidence_level: float = 0.95):
+                 n_bootstrap: int = 10000,
+                 confidence_level: float = 0.95,
+                 random_seed: int = 42):
         """
         Initialize case study generator
         
@@ -49,21 +50,24 @@ class CaseStudyGenerator:
                                ('acoustic', 'semantic', 'combined', 'rating_outcome')
             n_bootstrap: Number of bootstrap iterations for confidence intervals
             confidence_level: Confidence level for intervals
+            random_seed: Random seed for reproducibility
         """
         self.num_case_studies = num_case_studies
         self.selection_criteria = selection_criteria
         self.n_bootstrap = n_bootstrap
         self.confidence_level = confidence_level
         self.alpha = 1 - confidence_level
+        self.random_seed = random_seed
         
-        # Key acoustic features for case studies
+        # Set random seed for reproducibility
+        np.random.seed(self.random_seed)
+        
+        # Key acoustic features for case studies (from thesis)
         self.key_acoustic_features = [
-            'f0_cv', 
-            'f0_std', 
-            'jitter_local', 
-            'speech_rate', 
-            'pause_frequency', 
-            'acoustic_volatility_index'
+            'f0_cv',      # F0 Coefficient of Variation - Primary feature
+            'f0_std',     # F0 Standard Deviation - Complementary pitch measure
+            'pause_frequency',  # Pause Frequency - Temporal stress indicator
+            'jitter_local'      # Jitter Local - Voice quality measure
         ]
         
         # Key semantic features for case studies
@@ -77,6 +81,18 @@ class CaseStudyGenerator:
         # Key combined features for case studies
         self.key_combined_features = [
             'acoustic_semantic_alignment'
+        ]
+        
+        # Color palette (same as descriptive_analysis.py)
+        self.color_palette = [
+            '#D0E7F9',   # Very light sky blue
+            '#A8CDFE',   # Light sky blue
+            '#5BA0FF',   # Bright, clear blue
+            '#2C60D9',   # Rich medium blue
+            '#1D8AA2',   # Teal-blue, more cyan/green hint for contrast
+            '#1780B9',   # Deep cyan-blue (teal hint)
+            '#0D427F',   # Dark blue-gray
+            '#062F5B'    # Very dark blue
         ]
     
     def load_data(self, 
@@ -221,27 +237,30 @@ class CaseStudyGenerator:
         Returns:
             List of file_ids selected for case studies
         """
+        # Set random state for reproducible selection
+        rng = np.random.RandomState(self.random_seed)
+        
         # Selection criteria
         if self.selection_criteria == 'acoustic':
             # Select based on acoustic features
-            # Focus on extreme values of acoustic volatility
-            if 'acoustic_volatility_index' in analysis_df.columns:
+            # Focus on extreme values of f0_cv (primary acoustic feature)
+            if 'f0_cv' in analysis_df.columns:
                 # Get high and low extremes
-                high_volatility = analysis_df.nlargest(self.num_case_studies // 2, 'acoustic_volatility_index')
-                low_volatility = analysis_df.nsmallest(self.num_case_studies // 2, 'acoustic_volatility_index')
+                high_f0cv = analysis_df.nlargest(self.num_case_studies // 2, 'f0_cv')
+                low_f0cv = analysis_df.nsmallest(self.num_case_studies // 2, 'f0_cv')
                 
                 # Combine and deduplicate
-                selected = pd.concat([high_volatility, low_volatility])
+                selected = pd.concat([high_f0cv, low_f0cv])
                 selected = selected.drop_duplicates(subset=['file_id'])
                 
-                # If we need more, add based on f0_cv
-                if len(selected) < self.num_case_studies and 'f0_cv' in analysis_df.columns:
+                # If we need more, add based on pause_frequency
+                if len(selected) < self.num_case_studies and 'pause_frequency' in analysis_df.columns:
                     remaining = analysis_df[~analysis_df['file_id'].isin(selected['file_id'])]
-                    more_selected = remaining.nlargest(self.num_case_studies - len(selected), 'f0_cv')
+                    more_selected = remaining.nlargest(self.num_case_studies - len(selected), 'pause_frequency')
                     selected = pd.concat([selected, more_selected])
             else:
-                # Fallback to f0_cv if acoustic_volatility_index not available
-                selected = analysis_df.nlargest(self.num_case_studies, 'f0_cv')
+                # Fallback to random selection
+                selected = analysis_df.sample(min(self.num_case_studies, len(analysis_df)), random_state=rng)
         
         elif self.selection_criteria == 'semantic':
             # Select based on semantic features
@@ -262,7 +281,7 @@ class CaseStudyGenerator:
                     selected = pd.concat([selected, more_selected])
             else:
                 # Fallback to random selection
-                selected = analysis_df.sample(min(self.num_case_studies, len(analysis_df)))
+                selected = analysis_df.sample(min(self.num_case_studies, len(analysis_df)), random_state=rng)
         
         elif self.selection_criteria == 'rating_outcome':
             # Select based on rating outcomes
@@ -277,20 +296,20 @@ class CaseStudyGenerator:
                 num_upgrades = min(len(upgrades), self.num_case_studies // 4)
                 num_affirms = min(len(affirms), self.num_case_studies - num_downgrades - num_upgrades)
                 
-                selected_downgrades = downgrades.sample(num_downgrades) if num_downgrades > 0 else pd.DataFrame()
-                selected_upgrades = upgrades.sample(num_upgrades) if num_upgrades > 0 else pd.DataFrame()
-                selected_affirms = affirms.sample(num_affirms) if num_affirms > 0 else pd.DataFrame()
+                selected_downgrades = downgrades.sample(num_downgrades, random_state=rng) if num_downgrades > 0 else pd.DataFrame()
+                selected_upgrades = upgrades.sample(num_upgrades, random_state=rng) if num_upgrades > 0 else pd.DataFrame()
+                selected_affirms = affirms.sample(num_affirms, random_state=rng) if num_affirms > 0 else pd.DataFrame()
                 
                 selected = pd.concat([selected_downgrades, selected_upgrades, selected_affirms])
                 
                 # If we need more, add random selections
                 if len(selected) < self.num_case_studies:
                     remaining = analysis_df[~analysis_df['file_id'].isin(selected['file_id'])]
-                    more_selected = remaining.sample(min(self.num_case_studies - len(selected), len(remaining)))
+                    more_selected = remaining.sample(min(self.num_case_studies - len(selected), len(remaining)), random_state=rng)
                     selected = pd.concat([selected, more_selected])
             else:
                 # Fallback to random selection
-                selected = analysis_df.sample(min(self.num_case_studies, len(analysis_df)))
+                selected = analysis_df.sample(min(self.num_case_studies, len(analysis_df)), random_state=rng)
         
         else:  # 'combined' or any other value
             # Select based on a combination of criteria
@@ -313,11 +332,11 @@ class CaseStudyGenerator:
                 
                 # Create initial selection
                 selected = pd.concat([
-                    high_stress.sample(num_high_stress) if num_high_stress > 0 else pd.DataFrame(),
-                    high_excitement.sample(num_high_excitement) if num_high_excitement > 0 else pd.DataFrame(),
-                    moderate_stress.sample(num_moderate_stress) if num_moderate_stress > 0 else pd.DataFrame(),
-                    moderate_excitement.sample(num_moderate_excitement) if num_moderate_excitement > 0 else pd.DataFrame(),
-                    baseline.sample(num_baseline) if num_baseline > 0 else pd.DataFrame()
+                    high_stress.sample(num_high_stress, random_state=rng) if num_high_stress > 0 else pd.DataFrame(),
+                    high_excitement.sample(num_high_excitement, random_state=rng) if num_high_excitement > 0 else pd.DataFrame(),
+                    moderate_stress.sample(num_moderate_stress, random_state=rng) if num_moderate_stress > 0 else pd.DataFrame(),
+                    moderate_excitement.sample(num_moderate_excitement, random_state=rng) if num_moderate_excitement > 0 else pd.DataFrame(),
+                    baseline.sample(num_baseline, random_state=rng) if num_baseline > 0 else pd.DataFrame()
                 ])
                 
                 # If we need more and have rating outcomes, add based on that
@@ -331,8 +350,8 @@ class CaseStudyGenerator:
                     num_upgrades = min(len(upgrades), num_remaining - num_downgrades)
                     
                     more_selected = pd.concat([
-                        downgrades.sample(num_downgrades) if num_downgrades > 0 else pd.DataFrame(),
-                        upgrades.sample(num_upgrades) if num_upgrades > 0 else pd.DataFrame()
+                        downgrades.sample(num_downgrades, random_state=rng) if num_downgrades > 0 else pd.DataFrame(),
+                        upgrades.sample(num_upgrades, random_state=rng) if num_upgrades > 0 else pd.DataFrame()
                     ])
                     
                     selected = pd.concat([selected, more_selected])
@@ -350,9 +369,9 @@ class CaseStudyGenerator:
             
             else:
                 # Fallback to combined acoustic and semantic criteria
-                if all(col in analysis_df.columns for col in ['acoustic_volatility_index', 'sentiment_negative']):
+                if all(col in analysis_df.columns for col in ['f0_cv', 'sentiment_negative']):
                     # Create a composite score
-                    analysis_df['composite_score'] = analysis_df['acoustic_volatility_index'] * analysis_df['sentiment_negative']
+                    analysis_df['composite_score'] = analysis_df['f0_cv'] * analysis_df['sentiment_negative']
                     
                     # Select based on high and low composite scores
                     high_composite = analysis_df.nlargest(self.num_case_studies // 2, 'composite_score')
@@ -362,11 +381,11 @@ class CaseStudyGenerator:
                     selected = selected.drop_duplicates(subset=['file_id'])
                 else:
                     # Fallback to random selection
-                    selected = analysis_df.sample(min(self.num_case_studies, len(analysis_df)))
+                    selected = analysis_df.sample(min(self.num_case_studies, len(analysis_df)), random_state=rng)
         
         # Ensure we don't have more than requested
         if len(selected) > self.num_case_studies:
-            selected = selected.sample(self.num_case_studies)
+            selected = selected.sample(self.num_case_studies, random_state=rng)
         
         # Get the list of file_ids
         file_ids = selected['file_id'].tolist()
@@ -418,13 +437,18 @@ class CaseStudyGenerator:
             'combined_features': {},
             'rating_data': {},
             'percentile_rankings': {},
-            'percentile_rankings_ci': {}
+            'percentile_rankings_ci': {},
+            'mad_effect_sizes': {}
         }
         
         # Calculate percentiles with confidence intervals for key features
         percentile_results = self._calculate_percentile_rankings_with_ci(file_id, analysis_df)
         case_study['percentile_rankings'] = percentile_results['percentiles']
         case_study['percentile_rankings_ci'] = percentile_results['confidence_intervals']
+        
+        # Calculate MAD-based effect sizes
+        mad_effects = self._calculate_mad_effects(file_id, analysis_df)
+        case_study['mad_effect_sizes'] = mad_effects
         
         # Add acoustic features
         for feature in self.key_acoustic_features:
@@ -486,61 +510,12 @@ class CaseStudyGenerator:
         
         return case_study
     
-    def _calculate_percentile_rankings(self, 
-                                     file_id: str, 
-                                     analysis_df: pd.DataFrame) -> Dict[str, float]:
-        """
-        Calculate percentile rankings for key features
-        
-        Args:
-            file_id: File ID for the case study
-            analysis_df: Analysis DataFrame
-            
-        Returns:
-            Dictionary of percentile rankings
-        """
-        percentiles = {}
-        
-        # Get data for this file
-        file_data = analysis_df[analysis_df['file_id'] == file_id].iloc[0]
-        
-        # Calculate percentiles for acoustic features
-        for feature in self.key_acoustic_features:
-            if feature in file_data and feature in analysis_df.columns:
-                value = file_data[feature]
-                all_values = analysis_df[feature].dropna().values
-                
-                # Calculate percentile rank
-                percentile = (np.sum(all_values <= value) / len(all_values)) * 100
-                percentiles[feature] = percentile
-        
-        # Calculate percentiles for semantic features
-        for feature in self.key_semantic_features:
-            if feature in file_data and feature in analysis_df.columns:
-                value = file_data[feature]
-                all_values = analysis_df[feature].dropna().values
-                
-                # Calculate percentile rank
-                percentile = (np.sum(all_values <= value) / len(all_values)) * 100
-                percentiles[feature] = percentile
-        
-        # Calculate percentiles for combined features
-        for feature in self.key_combined_features:
-            if feature in file_data and feature in analysis_df.columns:
-                value = file_data[feature]
-                all_values = analysis_df[feature].dropna().values
-                
-                # Calculate percentile rank
-                percentile = (np.sum(all_values <= value) / len(all_values)) * 100
-                percentiles[feature] = percentile
-        
-        return percentiles
-    
     def _calculate_percentile_rankings_with_ci(self, 
                                              file_id: str, 
                                              analysis_df: pd.DataFrame) -> Dict:
         """
         Calculate percentile rankings with bootstrap confidence intervals
+        using the standard definition with proper handling of ties
         
         Args:
             file_id: File ID for the case study
@@ -560,13 +535,21 @@ class CaseStudyGenerator:
                        self.key_semantic_features + 
                        self.key_combined_features)
         
+        # Set local random state for bootstrap reproducibility
+        rng = np.random.RandomState(self.random_seed)
+        
         for feature in all_features:
             if feature in file_data and feature in analysis_df.columns:
                 value = file_data[feature]
                 all_values = analysis_df[feature].dropna().values
                 
                 if len(all_values) < 3:  # Not enough data for meaningful CI
-                    percentile = (np.sum(all_values <= value) / len(all_values)) * 100
+                    # Standard definition with proper handling of ties
+                    n = len(all_values)
+                    less_than = np.sum(all_values < value)
+                    equal_to = np.sum(all_values == value)
+                    percentile = (less_than + 0.5 * equal_to) / n * 100
+                    
                     percentiles[feature] = percentile
                     confidence_intervals[feature] = {
                         'ci_lower': percentile,
@@ -575,8 +558,11 @@ class CaseStudyGenerator:
                     }
                     continue
                 
-                # Calculate basic percentile rank
-                percentile = (np.sum(all_values <= value) / len(all_values)) * 100
+                # Calculate basic percentile rank using standard definition
+                n = len(all_values)
+                less_than = np.sum(all_values < value)
+                equal_to = np.sum(all_values == value)
+                percentile = (less_than + 0.5 * equal_to) / n * 100
                 percentiles[feature] = percentile
                 
                 # Bootstrap to calculate confidence interval
@@ -584,15 +570,16 @@ class CaseStudyGenerator:
                 
                 for _ in range(self.n_bootstrap):
                     # Sample with replacement
-                    bootstrap_sample = np.random.choice(
+                    bootstrap_sample = rng.choice(
                         all_values, 
                         size=len(all_values), 
                         replace=True
                     )
                     
-                    # Calculate percentile rank in bootstrap sample
-                    boot_percentile = (np.sum(bootstrap_sample <= value) / 
-                                     len(bootstrap_sample)) * 100
+                    # Calculate percentile rank in bootstrap sample using standard definition
+                    boot_less_than = np.sum(bootstrap_sample < value)
+                    boot_equal_to = np.sum(bootstrap_sample == value)
+                    boot_percentile = (boot_less_than + 0.5 * boot_equal_to) / len(bootstrap_sample) * 100
                     bootstrap_percentiles.append(boot_percentile)
                 
                 # Calculate confidence interval
@@ -609,6 +596,51 @@ class CaseStudyGenerator:
             'percentiles': percentiles,
             'confidence_intervals': confidence_intervals
         }
+    
+    def _calculate_mad_effects(self, 
+                             file_id: str, 
+                             analysis_df: pd.DataFrame) -> Dict[str, float]:
+        """
+        Calculate MAD-based effect sizes for a case
+        
+        Args:
+            file_id: File ID for the case study
+            analysis_df: Analysis DataFrame
+            
+        Returns:
+            Dictionary of MAD effect sizes
+        """
+        mad_effects = {}
+        
+        # Get data for this file
+        file_data = analysis_df[analysis_df['file_id'] == file_id].iloc[0]
+        
+        # Combine all features
+        all_features = (self.key_acoustic_features + 
+                       self.key_semantic_features + 
+                       self.key_combined_features)
+        
+        for feature in all_features:
+            if feature in file_data and feature in analysis_df.columns:
+                value = file_data[feature]
+                all_values = analysis_df[feature].dropna().values
+                
+                if len(all_values) >= 3:  # Need at least 3 values for meaningful MAD
+                    median = np.median(all_values)
+                    mad = stats.median_abs_deviation(all_values)
+                    
+                    if mad == 0:
+                        # All values are identical
+                        if value == median:
+                            mad_effect = 0.0
+                        else:
+                            mad_effect = np.sign(value - median)
+                    else:
+                        mad_effect = (value - median) / mad
+                    
+                    mad_effects[feature] = float(mad_effect)
+        
+        return mad_effects
     
     def _calculate_cohens_d(self, 
                           group1_values: np.ndarray, 
@@ -776,26 +808,44 @@ class CaseStudyGenerator:
         insights = []
         
         # Get key data
-        acoustic_volatility = case_study['acoustic_features'].get('acoustic_volatility_index', None)
+        f0_cv = case_study['acoustic_features'].get('f0_cv', None)
         sentiment_negative = case_study['semantic_features'].get('sentiment_negative', None)
         communication_pattern = case_study['metadata'].get('communication_pattern', None)
         rating_outcome = case_study['metadata'].get('rating_outcome', None)
         
-        # Acoustic volatility insights with confidence intervals
-        if acoustic_volatility is not None:
-            acoustic_percentile = case_study['percentile_rankings'].get('acoustic_volatility_index', None)
-            if acoustic_percentile is not None:
+        # F0 CV insights with confidence intervals
+        if f0_cv is not None:
+            f0_cv_percentile = case_study['percentile_rankings'].get('f0_cv', None)
+            if f0_cv_percentile is not None:
                 # Get confidence interval
-                ci_data = case_study['percentile_rankings_ci'].get('acoustic_volatility_index', {})
-                ci_lower = ci_data.get('ci_lower', acoustic_percentile)
-                ci_upper = ci_data.get('ci_upper', acoustic_percentile)
+                ci_data = case_study['percentile_rankings_ci'].get('f0_cv', {})
+                ci_lower = ci_data.get('ci_lower', f0_cv_percentile)
+                ci_upper = ci_data.get('ci_upper', f0_cv_percentile)
                 
-                if acoustic_percentile > 90:
-                    insights.append(f"Very high acoustic volatility: {acoustic_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%) - indicates potential executive stress")
-                elif acoustic_percentile > 75:
-                    insights.append(f"Elevated acoustic volatility: {acoustic_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%) - suggests moderate vocal stress")
-                elif acoustic_percentile < 25:
-                    insights.append(f"Very low acoustic volatility: {acoustic_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%) - indicates calm, controlled delivery")
+                # Get MAD effect
+                mad_effect = case_study['mad_effect_sizes'].get('f0_cv', None)
+                mad_str = f" (MAD effect: {mad_effect:.2f})" if mad_effect is not None else ""
+                
+                if f0_cv_percentile > 90:
+                    insights.append(f"Very high F0 coefficient of variation: {f0_cv_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%){mad_str} - indicates potential executive stress")
+                elif f0_cv_percentile > 75:
+                    insights.append(f"Elevated F0 coefficient of variation: {f0_cv_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%){mad_str} - suggests moderate vocal stress")
+                elif f0_cv_percentile < 25:
+                    insights.append(f"Very low F0 coefficient of variation: {f0_cv_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%){mad_str} - indicates calm, controlled delivery")
+        
+        # Pause frequency insights
+        pause_freq = case_study['acoustic_features'].get('pause_frequency', None)
+        if pause_freq is not None:
+            pause_percentile = case_study['percentile_rankings'].get('pause_frequency', None)
+            if pause_percentile is not None:
+                ci_data = case_study['percentile_rankings_ci'].get('pause_frequency', {})
+                ci_lower = ci_data.get('ci_lower', pause_percentile)
+                ci_upper = ci_data.get('ci_upper', pause_percentile)
+                
+                if pause_percentile > 75:
+                    insights.append(f"High pause frequency: {pause_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%) - suggests hesitation or cognitive load")
+                elif pause_percentile < 25:
+                    insights.append(f"Low pause frequency: {pause_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%) - indicates fluent, confident speech")
         
         # Sentiment insights with confidence intervals
         if sentiment_negative is not None:
@@ -806,15 +856,19 @@ class CaseStudyGenerator:
                 ci_lower = ci_data.get('ci_lower', sentiment_percentile)
                 ci_upper = ci_data.get('ci_upper', sentiment_percentile)
                 
+                # Get MAD effect
+                mad_effect = case_study['mad_effect_sizes'].get('sentiment_negative', None)
+                mad_str = f" (MAD effect: {mad_effect:.2f})" if mad_effect is not None else ""
+                
                 if sentiment_percentile > 90:
-                    insights.append(f"Highly negative sentiment: {sentiment_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%) - suggests challenging financial conditions")
+                    insights.append(f"Highly negative sentiment: {sentiment_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%){mad_str} - suggests challenging financial conditions")
                 elif sentiment_percentile > 75:
-                    insights.append(f"Elevated negative sentiment: {sentiment_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%) - indicates potential concerns")
+                    insights.append(f"Elevated negative sentiment: {sentiment_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%){mad_str} - indicates potential concerns")
                 elif sentiment_percentile < 25:
-                    insights.append(f"Very low negative sentiment: {sentiment_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%) - suggests positive financial outlook")
+                    insights.append(f"Very low negative sentiment: {sentiment_percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%){mad_str} - suggests positive financial outlook")
         
         # Acoustic-semantic alignment insights
-        if acoustic_volatility is not None and sentiment_negative is not None:
+        if f0_cv is not None and sentiment_negative is not None:
             alignment = case_study['combined_features'].get('acoustic_semantic_alignment', None)
             if alignment is not None:
                 alignment_percentile = case_study['percentile_rankings'].get('acoustic_semantic_alignment', None)
@@ -869,6 +923,150 @@ class CaseStudyGenerator:
         
         return insights
     
+    def create_case_study_visualizations(self,
+                                       case_studies: List[Dict],
+                                       output_dir: str):
+        """
+        Create visualizations for case studies
+        
+        Args:
+            case_studies: List of case study dictionaries
+            output_dir: Output directory for visualizations
+        """
+        # Create visualizations directory
+        viz_dir = os.path.join(output_dir, 'visualizations')
+        os.makedirs(viz_dir, exist_ok=True)
+        
+        # Set style
+        plt.style.use('seaborn-v0_8-whitegrid')
+        
+        # Create summary visualization
+        self._create_case_summary_plot(case_studies, viz_dir)
+        
+        # Create individual case visualizations
+        for case in case_studies:
+            self._create_individual_case_plot(case, viz_dir)
+    
+    def _create_case_summary_plot(self,
+                                case_studies: List[Dict],
+                                output_dir: str):
+        """
+        Create summary visualization of all case studies
+        
+        Args:
+            case_studies: List of case study dictionaries
+            output_dir: Output directory for visualization
+        """
+        fig, axes = plt.subplots(2, 2, figsize=(6, 5))
+        axes = axes.flatten()
+        
+        # Plot 1: F0 CV percentiles
+        ax = axes[0]
+        file_ids = []
+        f0_cv_percentiles = []
+        colors = []
+        
+        for case in case_studies:
+            if 'f0_cv' in case['percentile_rankings']:
+                file_ids.append(case['file_id'])
+                f0_cv_percentiles.append(case['percentile_rankings']['f0_cv'])
+                
+                # Color based on rating outcome
+                outcome = case['metadata'].get('rating_outcome', 'unknown')
+                if outcome == 'downgrade':
+                    colors.append(self.color_palette[7])
+                elif outcome == 'upgrade':
+                    colors.append(self.color_palette[2])
+                else:
+                    colors.append(self.color_palette[3])
+        
+        bars = ax.barh(range(len(file_ids)), f0_cv_percentiles, color=colors, alpha=0.8)
+        
+        # Add percentile lines
+        ax.axvline(x=50, color=self.color_palette[4], linestyle='--', alpha=0.5)
+        ax.axvline(x=75, color=self.color_palette[5], linestyle='--', alpha=0.5)
+        ax.axvline(x=90, color=self.color_palette[7], linestyle='--', alpha=0.5)
+        
+        # Add value labels positioned to avoid overlap
+        for i, (bar, val) in enumerate(zip(bars, f0_cv_percentiles)):
+            x_pos = val + 2 if val < 90 else val - 2
+            ha = 'left' if val < 90 else 'right'
+            ax.text(x_pos, i, f"{val:.0f}%", ha=ha, va='center', fontsize=6, fontweight='normal')
+        
+        ax.set_yticks(range(len(file_ids)))
+        ax.set_yticklabels(file_ids, fontsize=6)
+        ax.set_xlabel('Percentile Rank', fontsize=7, fontweight='normal')
+        ax.set_title('F0 CV Percentiles', fontsize=8, fontweight='normal', pad=10)
+        ax.set_xlim(0, 105)
+        
+        # Similar plots for other features...
+        # (keeping it concise for space, but following same pattern)
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'case_studies_summary.png'), dpi=300)
+        plt.close()
+    
+    def _create_individual_case_plot(self,
+                                   case: Dict,
+                                   output_dir: str):
+        """
+        Create individual visualization for a case study
+        
+        Args:
+            case: Case study dictionary
+            output_dir: Output directory for visualization
+        """
+        # Create a radar plot for the case
+        fig = plt.figure(figsize=(6, 5))
+        ax = fig.add_subplot(111, polar=True)
+        
+        # Get features and percentiles
+        features = []
+        percentiles = []
+        
+        for feature in self.key_acoustic_features + self.key_semantic_features[:2]:  # Limit for clarity
+            if feature in case['percentile_rankings']:
+                features.append(feature.replace('_', ' ').title())
+                percentiles.append(case['percentile_rankings'][feature])
+        
+        if not features:
+            plt.close()
+            return
+        
+        # Number of variables
+        N = len(features)
+        
+        # Compute angle for each axis
+        angles = [n / float(N) * 2 * np.pi for n in range(N)]
+        angles += angles[:1]
+        
+        # Initialize the plot
+        ax.set_theta_offset(np.pi / 2)
+        ax.set_theta_direction(-1)
+        
+        # Draw axis lines for each angle and label
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(features, fontsize=7)
+        
+        # Draw y-axis labels
+        ax.set_yticks([25, 50, 75, 100])
+        ax.set_yticklabels(['25%', '50%', '75%', '100%'], fontsize=6)
+        ax.set_ylim(0, 100)
+        
+        # Plot data
+        percentiles += percentiles[:1]  # Complete the circle
+        ax.plot(angles, percentiles, 'o-', linewidth=1.5, color=self.color_palette[5])
+        ax.fill(angles, percentiles, alpha=0.25, color=self.color_palette[3])
+        
+        # Add title
+        outcome = case['metadata'].get('rating_outcome', 'Unknown')
+        plt.title(f"Case {case['file_id']} - {outcome.title()}", 
+                 fontsize=9, fontweight='normal', pad=10)
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f"case_{case['file_id']}_radar.png"), dpi=300)
+        plt.close()
+    
     def export_case_studies(self, 
                           case_studies: List[Dict], 
                           output_dir: str):
@@ -897,7 +1095,80 @@ class CaseStudyGenerator:
         # Export segments data if available
         self._export_segment_analysis(case_studies, output_dir)
         
+        # Create visualizations
+        self.create_case_study_visualizations(case_studies, output_dir)
+        
+        # Generate summary report
+        self._generate_summary_report(case_studies, output_dir)
+        
         logger.info(f"Case studies exported to {output_dir}")
+    
+    def _generate_summary_report(self,
+                               case_studies: List[Dict],
+                               output_dir: str):
+        """
+        Generate a summary report of case studies
+        
+        Args:
+            case_studies: List of case study dictionaries
+            output_dir: Output directory
+        """
+        report = []
+        
+        # Add title
+        report.append("# CASE STUDY ANALYSIS REPORT")
+        report.append("=" * 80)
+        report.append("")
+        
+        # Add reproducibility note
+        report.append("## REPRODUCIBILITY NOTE")
+        report.append("-" * 50)
+        report.append(f"Random seed used for case selection and bootstrap: {self.random_seed}")
+        report.append(f"Bootstrap iterations for confidence intervals: {self.n_bootstrap}")
+        report.append(f"Number of case studies: {len(case_studies)}")
+        report.append(f"Selection criteria: {self.selection_criteria}")
+        report.append("")
+        
+        # Add case study summaries
+        report.append("## CASE STUDY SUMMARIES")
+        report.append("-" * 50)
+        
+        for i, case in enumerate(case_studies, 1):
+            report.append(f"\n### Case {i}: {case['file_id']}")
+            
+            # Metadata
+            report.append(f"**Sector**: {case['metadata'].get('sector', 'Unknown')}")
+            report.append(f"**Rating Outcome**: {case['metadata'].get('rating_outcome', 'Unknown')}")
+            report.append(f"**Communication Pattern**: {case['metadata'].get('communication_pattern', 'Unknown')}")
+            
+            # Key percentiles with MAD effects
+            report.append("\n**Key Feature Percentiles**:")
+            
+            for feature in ['f0_cv', 'pause_frequency', 'sentiment_negative']:
+                if feature in case['percentile_rankings']:
+                    percentile = case['percentile_rankings'][feature]
+                    ci_data = case['percentile_rankings_ci'].get(feature, {})
+                    ci_lower = ci_data.get('ci_lower', percentile)
+                    ci_upper = ci_data.get('ci_upper', percentile)
+                    
+                    mad_effect = case['mad_effect_sizes'].get(feature, None)
+                    mad_str = f" (MAD effect: {mad_effect:.2f})" if mad_effect is not None else ""
+                    
+                    feature_name = feature.replace('_', ' ').title()
+                    report.append(f"- {feature_name}: {percentile:.1f}% (95% CI: {ci_lower:.1f}-{ci_upper:.1f}%){mad_str}")
+            
+            # Insights
+            if case.get('insights'):
+                report.append("\n**Key Insights**:")
+                for insight in case['insights'][:3]:  # Top 3 insights
+                    report.append(f"- {insight}")
+        
+        # Write report
+        report_path = os.path.join(output_dir, 'case_study_report.md')
+        with open(report_path, 'w') as f:
+            f.write('\n'.join(report))
+        
+        logger.info(f"Summary report saved to {report_path}")
     
     def _export_case_studies_csv(self, 
                                case_studies: List[Dict], 
@@ -944,6 +1215,10 @@ class CaseStudyGenerator:
                 row[f"{feature}_percentile_ci_lower"] = ci_data.get('ci_lower', None)
                 row[f"{feature}_percentile_ci_upper"] = ci_data.get('ci_upper', None)
                 row[f"{feature}_percentile_ci_width"] = ci_data.get('ci_width', None)
+            
+            # Add MAD effect sizes
+            for feature, mad_effect in case['mad_effect_sizes'].items():
+                row[f"{feature}_mad_effect"] = mad_effect
             
             rows.append(row)
         
@@ -1060,6 +1335,10 @@ class CaseStudyGenerator:
                     flat_data[f"{feature}_percentile_ci_lower"] = ci_data.get('ci_lower', None)
                     flat_data[f"{feature}_percentile_ci_upper"] = ci_data.get('ci_upper', None)
                     flat_data[f"{feature}_percentile_ci_width"] = ci_data.get('ci_width', None)
+                
+                # Add MAD effect if available
+                if feature in case['mad_effect_sizes']:
+                    flat_data[f"{feature}_mad_effect"] = case['mad_effect_sizes'][feature]
             
             # Create DataFrame with single row and save to CSV
             pd.DataFrame([flat_data]).to_csv(csv_path, index=False)
@@ -1139,12 +1418,21 @@ class CaseStudyGenerator:
                 if values:
                     percentile_rankings[feature] = float(np.mean(values))
             
+            # Calculate average MAD effects
+            mad_effects = {}
+            for feature in self.key_acoustic_features + self.key_semantic_features + self.key_combined_features:
+                values = [case['mad_effect_sizes'].get(feature, None) for case in cases]
+                values = [v for v in values if v is not None]
+                if values:
+                    mad_effects[feature] = float(np.mean(values))
+            
             group_metrics[outcome] = {
                 'count': len(cases),
                 'acoustic_features': acoustic_features,
                 'semantic_features': semantic_features,
                 'combined_features': combined_features,
                 'percentile_rankings': percentile_rankings,
+                'mad_effects': mad_effects,
                 'raw_values': {
                     'acoustic': acoustic_values,
                     'semantic': semantic_values,
@@ -1196,6 +1484,10 @@ class CaseStudyGenerator:
             # Add average percentile rankings
             for feature, value in metrics['percentile_rankings'].items():
                 row[f"avg_{feature}_percentile"] = value
+            
+            # Add average MAD effects
+            for feature, value in metrics['mad_effects'].items():
+                row[f"avg_{feature}_mad_effect"] = value
             
             rows.append(row)
         
@@ -1404,10 +1696,12 @@ def main():
     parser.add_argument("--selection", type=str, default="combined",
                        choices=["acoustic", "semantic", "combined", "rating_outcome"],
                        help="Criteria for selecting case studies")
-    parser.add_argument("--bootstrap", type=int, default=5000,
+    parser.add_argument("--bootstrap", type=int, default=10000,
                        help="Number of bootstrap iterations for confidence intervals")
     parser.add_argument("--confidence", type=float, default=0.95,
                        help="Confidence level for intervals")
+    parser.add_argument("--random_seed", type=int, default=42,
+                       help="Random seed for reproducibility")
     
     args = parser.parse_args()
     
@@ -1416,7 +1710,8 @@ def main():
         num_case_studies=args.num_cases,
         selection_criteria=args.selection,
         n_bootstrap=args.bootstrap,
-        confidence_level=args.confidence
+        confidence_level=args.confidence,
+        random_seed=args.random_seed
     )
     
     # Create output directory

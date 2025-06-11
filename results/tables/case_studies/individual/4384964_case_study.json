@@ -13,10 +13,8 @@
   "acoustic_features": {
     "f0_cv": 0.5056732393361665,
     "f0_std": 0.3968574386192829,
-    "jitter_local": 0.1796092403958749,
-    "speech_rate": 0.4781734431453515,
     "pause_frequency": 0.8987183025780467,
-    "acoustic_volatility_index": 0.0
+    "jitter_local": 0.1796092403958749
   },
   "semantic_features": {
     "sentiment_positive": 0.0037119169266155,
@@ -40,74 +38,73 @@
     "information_content": 0
   },
   "percentile_rankings": {
-    "f0_cv": 58.333333333333336,
-    "f0_std": 41.66666666666667,
-    "jitter_local": 33.33333333333333,
-    "speech_rate": 45.83333333333333,
-    "pause_frequency": 70.83333333333334,
-    "acoustic_volatility_index": 25.0,
-    "sentiment_positive": 16.666666666666664,
-    "sentiment_negative": 100.0,
-    "sentiment_neutral": 4.166666666666666,
-    "sentiment_variability": 4.166666666666666,
-    "acoustic_semantic_alignment": 4.166666666666666
+    "f0_cv": 56.25,
+    "f0_std": 39.58333333333333,
+    "pause_frequency": 68.75,
+    "jitter_local": 31.25,
+    "sentiment_positive": 14.583333333333334,
+    "sentiment_negative": 97.91666666666666,
+    "sentiment_neutral": 2.083333333333333,
+    "sentiment_variability": 2.083333333333333,
+    "acoustic_semantic_alignment": 2.083333333333333
   },
   "percentile_rankings_ci": {
     "f0_cv": {
-      "ci_lower": 43.75,
-      "ci_upper": 70.88541666666592,
-      "ci_width": 27.13541666666592
+      "ci_lower": 42.70833333333333,
+      "ci_upper": 69.79166666666666,
+      "ci_width": 27.08333333333333
     },
     "f0_std": {
-      "ci_lower": 27.083333333333332,
-      "ci_upper": 56.25,
-      "ci_width": 29.166666666666668
-    },
-    "jitter_local": {
-      "ci_lower": 20.833333333333336,
-      "ci_upper": 47.91666666666667,
-      "ci_width": 27.083333333333336
-    },
-    "speech_rate": {
-      "ci_lower": 31.25,
-      "ci_upper": 60.416666666666664,
-      "ci_width": 29.166666666666664
+      "ci_lower": 26.041666666666668,
+      "ci_upper": 53.125,
+      "ci_width": 27.083333333333332
     },
     "pause_frequency": {
-      "ci_lower": 58.333333333333336,
-      "ci_upper": 83.33333333333334,
-      "ci_width": 25.000000000000007
+      "ci_lower": 56.25,
+      "ci_upper": 81.25,
+      "ci_width": 25.0
     },
-    "acoustic_volatility_index": {
-      "ci_lower": 14.583333333333334,
-      "ci_upper": 37.5,
-      "ci_width": 22.916666666666664
+    "jitter_local": {
+      "ci_lower": 18.75,
+      "ci_upper": 44.79166666666667,
+      "ci_width": 26.04166666666667
     },
     "sentiment_positive": {
       "ci_lower": 6.25,
-      "ci_upper": 27.083333333333332,
-      "ci_width": 20.833333333333332
+      "ci_upper": 25.0,
+      "ci_width": 18.75
     },
     "sentiment_negative": {
-      "ci_lower": 100.0,
+      "ci_lower": 94.79166666666666,
       "ci_upper": 100.0,
-      "ci_width": 0.0
+      "ci_width": 5.208333333333343
     },
     "sentiment_neutral": {
       "ci_lower": 0.0,
-      "ci_upper": 10.416666666666668,
-      "ci_width": 10.416666666666668
+      "ci_upper": 5.208333333333334,
+      "ci_width": 5.208333333333334
     },
     "sentiment_variability": {
       "ci_lower": 0.0,
-      "ci_upper": 10.416666666666668,
-      "ci_width": 10.416666666666668
+      "ci_upper": 5.208333333333334,
+      "ci_width": 5.208333333333334
     },
     "acoustic_semantic_alignment": {
       "ci_lower": 0.0,
-      "ci_upper": 10.416666666666668,
-      "ci_width": 10.416666666666668
+      "ci_upper": 5.208333333333334,
+      "ci_width": 5.208333333333334
     }
+  },
+  "mad_effect_sizes": {
+    "f0_cv": 0.011706769476613102,
+    "f0_std": -0.20745323526022735,
+    "pause_frequency": 0.7933740511739227,
+    "jitter_local": -0.5625052878763548,
+    "sentiment_positive": -1.2448901023777306,
+    "sentiment_negative": 3.176074254025997,
+    "sentiment_neutral": -3.1044060543911614,
+    "sentiment_variability": -7.404507324976585,
+    "acoustic_semantic_alignment": -3.070745573236657
   },
   "audio_metadata": {
     "original_sr": 24000,
@@ -209,8 +206,8 @@
     "num_segments_analyzed": 10
   },
   "insights": [
-    "Highly negative sentiment: 100.0% (95% CI: 100.0-100.0%) - suggests challenging financial conditions",
-    "Low acoustic-semantic alignment: 4.2% (95% CI: 0.0-10.4%) - divergent stress indicators",
+    "Highly negative sentiment: 97.9% (95% CI: 94.8-100.0%) (MAD effect: 3.18) - suggests challenging financial conditions",
+    "Low acoustic-semantic alignment: 2.1% (95% CI: 0.0-5.2%) - divergent stress indicators",
     "Mixed communication pattern - inconsistent stress/arousal indicators",
     "Rating affirmation followed this earnings call - stable financial outcomes",
     "Highest vocal stress detected at 50-60s (F0 CV: 0.222)"

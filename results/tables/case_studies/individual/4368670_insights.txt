@@ -1,8 +1,10 @@
 INSIGHTS FOR CASE STUDY: 4368670
 ============================================================
 
-1. Highly negative sentiment: 91.7% (95% CI: 83.3-97.9%) - suggests challenging financial conditions
-2. Low acoustic-semantic alignment: 12.5% (95% CI: 4.2-22.9%) - divergent stress indicators
-3. Mixed communication pattern - inconsistent stress/arousal indicators
-4. Rating upgrade followed this earnings call - positive financial outcomes
-5. Highest vocal stress detected at 20-30s (F0 CV: 0.572)
+1. Elevated F0 coefficient of variation: 87.5% (95% CI: 81.2-93.8%) (MAD effect: 1.03) - suggests moderate vocal stress
+2. High pause frequency: 87.5% (95% CI: 81.2-93.8%) - suggests hesitation or cognitive load
+3. Elevated negative sentiment: 89.6% (95% CI: 80.2-96.9%) (MAD effect: 2.74) - indicates potential concerns
+4. Low acoustic-semantic alignment: 10.4% (95% CI: 3.1-18.8%) - divergent stress indicators
+5. Mixed communication pattern - inconsistent stress/arousal indicators
+6. Rating upgrade followed this earnings call - positive financial outcomes
+7. Highest vocal stress detected at 20-30s (F0 CV: 0.572)

@@ -1,9 +1,9 @@
 INSIGHTS FOR CASE STUDY: 4361631
 ============================================================
 
-1. Very high acoustic volatility: 100.0% (95% CI: 100.0-100.0%) - indicates potential executive stress
-2. Highly negative sentiment: 95.8% (95% CI: 89.6-100.0%) - suggests challenging financial conditions
-3. Strong acoustic-semantic alignment: 91.7% (95% CI: 83.3-97.9%) - consistent stress signals
+1. Low pause frequency: 12.5% (95% CI: 7.3-18.8%) - indicates fluent, confident speech
+2. Highly negative sentiment: 93.8% (95% CI: 86.5-99.0%) (MAD effect: 2.98) - suggests challenging financial conditions
+3. Strong acoustic-semantic alignment: 89.6% (95% CI: 81.2-96.9%) - consistent stress signals
 4. High stress communication pattern detected - convergence of multiple stress indicators
 5. Rating affirmation followed this earnings call - stable financial outcomes
 6. Highest vocal stress detected at 40-50s (F0 CV: 0.333)

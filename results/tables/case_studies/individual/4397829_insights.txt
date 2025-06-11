@@ -1,0 +1,9 @@
+INSIGHTS FOR CASE STUDY: 4397829
+============================================================
+
+1. Very low F0 coefficient of variation: 12.5% (95% CI: 6.2-18.8%) (MAD effect: -1.03) - indicates calm, controlled delivery
+2. Very low negative sentiment: 6.2% (95% CI: 1.0-13.5%) (MAD effect: -1.91) - suggests positive financial outlook
+3. Strong acoustic-semantic alignment: 85.4% (95% CI: 75.0-93.8%) - consistent stress signals
+4. Baseline stability pattern - typical earnings call communication pattern
+5. Rating affirmation followed this earnings call - stable financial outcomes
+6. Highest vocal stress detected at 80-90s (F0 CV: 0.225)

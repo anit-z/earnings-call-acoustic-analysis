@@ -1,8 +1,8 @@
 INSIGHTS FOR CASE STUDY: 4341191
 ============================================================
 
-1. Very high acoustic volatility: 100.0% (95% CI: 100.0-100.0%) - indicates potential executive stress
-2. Low acoustic-semantic alignment: 20.8% (95% CI: 10.4-33.3%) - divergent stress indicators
+1. Low pause frequency: 12.5% (95% CI: 7.3-18.8%) - indicates fluent, confident speech
+2. Low acoustic-semantic alignment: 18.8% (95% CI: 8.3-30.2%) - divergent stress indicators
 3. High excitement pattern detected - suggests positive arousal rather than stress
 4. Rating affirmation followed this earnings call - stable financial outcomes
 5. Highest vocal stress detected at 0-10s (F0 CV: 0.644)

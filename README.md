@@ -27,3 +27,12 @@ demonstrator/: Voice technology demonstrator
 notebooks/: Jupyter notebooks for exploration
 results/: Figures and tables
 scripts/: Utility and SLURM scripts
+
+## Experiments
+
+### Comprehensive Acoustic Features
+Focus on primary vocal stress indicators:
+- F0 Coefficient of Variation (f0_cv)
+- F0 Standard Deviation (f0_std)
+- Pause Frequency
+- Jitter Local

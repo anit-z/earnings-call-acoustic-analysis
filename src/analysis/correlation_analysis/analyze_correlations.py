@@ -18,6 +18,7 @@ import seaborn as sns
 from scipy import stats
 import statsmodels.api as sm
 from statsmodels.stats.multitest import multipletests
+import warnings
 
 # Set up logging
 logging.basicConfig(
@@ -35,25 +36,29 @@ class CorrelationAnalyzer:
     
     def __init__(self, 
                  significance_threshold: float = 0.05,
-                 correction_method: str = 'fdr_bh'):
+                 correction_method: str = 'fdr_bh',
+                 random_seed: int = 42):
         """
         Initialize correlation analyzer
         
         Args:
             significance_threshold: p-value threshold for significance
             correction_method: Method for multiple comparisons correction
+            random_seed: Random seed for reproducibility
         """
         self.significance_threshold = significance_threshold
         self.correction_method = correction_method
+        self.random_seed = random_seed
         
-        # Key acoustic features for correlation analysis
+        # Set random seed for reproducibility
+        np.random.seed(self.random_seed)
+        
+        # Key acoustic features for correlation analysis (from thesis)
         self.key_acoustic_features = [
-            'f0_cv', 
-            'f0_std', 
-            'jitter_local', 
-            'speech_rate', 
-            'pause_frequency', 
-            'acoustic_volatility_index'
+            'f0_cv',      # F0 Coefficient of Variation - Primary feature
+            'f0_std',     # F0 Standard Deviation - Complementary pitch measure
+            'pause_frequency',  # Pause Frequency - Temporal stress indicator
+            'jitter_local'      # Jitter Local - Voice quality measure
         ]
         
         # Key semantic features for correlation analysis
@@ -68,6 +73,28 @@ class CorrelationAnalyzer:
         self.key_combined_features = [
             'acoustic_semantic_alignment'
         ]
+        
+        # Color palette (same as descriptive_analysis.py)
+        self.color_palette = [
+            '#D0E7F9',   # Very light sky blue
+            '#A8CDFE',   # Light sky blue
+            '#5BA0FF',   # Bright, clear blue
+            '#2C60D9',   # Rich medium blue
+            '#1D8AA2',   # Teal-blue, more cyan/green hint for contrast
+            '#1780B9',   # Deep cyan-blue (teal hint)
+            '#0D427F',   # Dark blue-gray
+            '#062F5B'    # Very dark blue
+        ]
+        
+        # Acoustic-semantic convergence thresholds (from thesis)
+        self.correlation_thresholds = {
+            'strong': 0.6,
+            'moderate': 0.3,
+            'weak': 0.0
+        }
+        
+        # Track constant features
+        self.constant_features = set()
     
     def load_data(self, 
                 features_dir: str, 
@@ -181,6 +208,126 @@ class CorrelationAnalyzer:
         
         return merged_df
     
+    def is_constant_array(self, arr: np.ndarray) -> bool:
+        """
+        Check if an array is constant (all values are the same)
+        
+        Args:
+            arr: Array to check
+            
+        Returns:
+            True if array is constant, False otherwise
+        """
+        # Remove NaN values
+        clean_arr = arr[~np.isnan(arr)]
+        if len(clean_arr) == 0:
+            return True
+        return np.all(clean_arr == clean_arr[0])
+    
+    def classify_correlation_strength(self, r: float) -> str:
+        """
+        Classify correlation strength based on thesis thresholds
+        
+        Args:
+            r: Correlation coefficient
+            
+        Returns:
+            String classification of correlation strength
+        """
+        abs_r = abs(r)
+        if abs_r >= self.correlation_thresholds['strong']:
+            return 'strong'
+        elif abs_r >= self.correlation_thresholds['moderate']:
+            return 'moderate'
+        else:
+            return 'weak'
+    
+    def calculate_correlations_with_bootstrap(self, 
+                                            x: np.ndarray, 
+                                            y: np.ndarray, 
+                                            n_bootstrap: int = 1000,
+                                            feature_names: Optional[Tuple[str, str]] = None) -> Dict:
+        """
+        Calculate correlation with bootstrap confidence intervals
+        
+        Args:
+            x: First variable
+            y: Second variable
+            n_bootstrap: Number of bootstrap iterations
+            feature_names: Optional tuple of feature names for logging
+            
+        Returns:
+            Dictionary with correlation, p-value, and confidence intervals
+        """
+        # Remove NaN values
+        mask = ~(np.isnan(x) | np.isnan(y))
+        x_clean = x[mask]
+        y_clean = y[mask]
+        
+        if len(x_clean) < 3:  # Need at least 3 points
+            return {
+                'correlation': np.nan,
+                'p_value': np.nan,
+                'ci_lower': np.nan,
+                'ci_upper': np.nan
+            }
+        
+        # Check for constant arrays
+        if self.is_constant_array(x_clean) or self.is_constant_array(y_clean):
+            if feature_names:
+                if self.is_constant_array(x_clean):
+                    self.constant_features.add(feature_names[0])
+                if self.is_constant_array(y_clean):
+                    self.constant_features.add(feature_names[1])
+            return {
+                'correlation': np.nan,
+                'p_value': np.nan,
+                'ci_lower': np.nan,
+                'ci_upper': np.nan
+            }
+        
+        # Calculate observed correlation with warning suppression
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=stats.ConstantInputWarning)
+            try:
+                corr, p_value = stats.pearsonr(x_clean, y_clean)
+            except:
+                return {
+                    'correlation': np.nan,
+                    'p_value': np.nan,
+                    'ci_lower': np.nan,
+                    'ci_upper': np.nan
+                }
+        
+        # Bootstrap for confidence intervals
+        rng = np.random.RandomState(self.random_seed)
+        bootstrap_corrs = []
+        
+        for _ in range(n_bootstrap):
+            indices = rng.choice(len(x_clean), len(x_clean), replace=True)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=stats.ConstantInputWarning)
+                try:
+                    boot_corr, _ = stats.pearsonr(x_clean[indices], y_clean[indices])
+                    bootstrap_corrs.append(boot_corr)
+                except:
+                    continue
+        
+        # Calculate confidence intervals
+        if len(bootstrap_corrs) > 0:
+            ci_lower = np.percentile(bootstrap_corrs, 2.5)
+            ci_upper = np.percentile(bootstrap_corrs, 97.5)
+        else:
+            ci_lower = np.nan
+            ci_upper = np.nan
+        
+        return {
+            'correlation': corr,
+            'p_value': p_value,
+            'ci_lower': ci_lower,
+            'ci_upper': ci_upper
+        }
+    
     def calculate_correlations(self, analysis_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         """
         Calculate comprehensive correlation matrices
@@ -204,7 +351,9 @@ class CorrelationAnalyzer:
             
             if acoustic_cols and semantic_cols:
                 # Calculate full correlation matrix
-                full_corr = analysis_df[acoustic_cols + semantic_cols].corr()
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('ignore', category=stats.ConstantInputWarning)
+                    full_corr = analysis_df[acoustic_cols + semantic_cols].corr()
                 
                 # Extract acoustic-semantic correlations
                 acoustic_semantic_corr = pd.DataFrame(
@@ -235,20 +384,19 @@ class CorrelationAnalyzer:
                     # Calculate correlation with rating outcomes
                     feature_rating_corr = pd.DataFrame(
                         index=feature_cols,
-                        columns=rating_cols
+                        columns=rating_cols,
+                        dtype=float  # Ensure float dtype
                     )
                     
                     for fc in feature_cols:
                         for rc in rating_cols:
-                            # Calculate Pearson correlation if possible
-                            if analysis_df[fc].notna().all() and analysis_df[rc].notna().all():
-                                corr, p_value = stats.pearsonr(
-                                    analysis_df[fc],
-                                    analysis_df[rc]
-                                )
-                                feature_rating_corr.loc[fc, rc] = corr
-                            else:
-                                feature_rating_corr.loc[fc, rc] = np.nan
+                            # Calculate correlation with bootstrap CI
+                            result = self.calculate_correlations_with_bootstrap(
+                                analysis_df[fc].values,
+                                analysis_df[rc].values,
+                                feature_names=(fc, rc)
+                            )
+                            feature_rating_corr.loc[fc, rc] = result['correlation']
                     
                     correlation_matrices['feature_rating'] = feature_rating_corr
         
@@ -268,7 +416,9 @@ class CorrelationAnalyzer:
         key_cols = [col for col in key_cols if col in analysis_df.columns]
         
         if key_cols:
-            full_corr = analysis_df[key_cols].corr()
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=stats.ConstantInputWarning)
+                full_corr = analysis_df[key_cols].corr()
             correlation_matrices['full'] = full_corr
         
         # 4. Calculate acoustic-acoustic and semantic-semantic correlations
@@ -276,12 +426,21 @@ class CorrelationAnalyzer:
         semantic_cols = [col for col in self.key_semantic_features if col in analysis_df.columns]
         
         if acoustic_cols and len(acoustic_cols) > 1:
-            acoustic_corr = analysis_df[acoustic_cols].corr()
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=stats.ConstantInputWarning)
+                acoustic_corr = analysis_df[acoustic_cols].corr()
             correlation_matrices['acoustic_acoustic'] = acoustic_corr
         
         if semantic_cols and len(semantic_cols) > 1:
-            semantic_corr = analysis_df[semantic_cols].corr()
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=stats.ConstantInputWarning)
+                semantic_corr = analysis_df[semantic_cols].corr()
             correlation_matrices['semantic_semantic'] = semantic_corr
+        
+        # Log constant features if any were found
+        if self.constant_features:
+            logger.warning(f"Found constant features (all values identical): {', '.join(sorted(self.constant_features))}")
+            logger.warning("Correlations involving constant features are set to NaN")
         
         return correlation_matrices
     
@@ -307,7 +466,8 @@ class CorrelationAnalyzer:
             # Initialize p-value matrix
             p_value_matrix = pd.DataFrame(
                 index=corr_matrix.index,
-                columns=corr_matrix.columns
+                columns=corr_matrix.columns,
+                dtype=float  # Ensure float dtype
             )
             
             # Calculate p-values
@@ -319,20 +479,13 @@ class CorrelationAnalyzer:
                     else:
                         # Check if both columns exist in the dataframe
                         if i in analysis_df.columns and j in analysis_df.columns:
-                            # Remove rows with missing values in either column
-                            valid_data = analysis_df[[i, j]].dropna()
-                            
-                            if len(valid_data) > 2:  # Need at least 3 points for correlation
-                                try:
-                                    corr, p_value = stats.pearsonr(
-                                        valid_data[i],
-                                        valid_data[j]
-                                    )
-                                    p_value_matrix.loc[i, j] = p_value
-                                except:
-                                    p_value_matrix.loc[i, j] = np.nan
-                            else:
-                                p_value_matrix.loc[i, j] = np.nan
+                            # Calculate correlation with bootstrap
+                            result = self.calculate_correlations_with_bootstrap(
+                                analysis_df[i].values,
+                                analysis_df[j].values,
+                                feature_names=(i, j)
+                            )
+                            p_value_matrix.loc[i, j] = result['p_value']
                         else:
                             p_value_matrix.loc[i, j] = np.nan
             
@@ -413,15 +566,20 @@ class CorrelationAnalyzer:
             for i in corr_matrix.index:
                 for j in corr_matrix.columns:
                     if i != j:  # Skip diagonal
-                        # Check if p-value is significant
-                        if (p_matrix.loc[i, j] <= self.significance_threshold and 
+                        # Check if p-value is significant and correlation is not NaN
+                        if (not pd.isna(corr_matrix.loc[i, j]) and
+                            p_matrix.loc[i, j] <= self.significance_threshold and 
                             not pd.isna(p_matrix.loc[i, j])):
+                            
+                            correlation = corr_matrix.loc[i, j]
+                            strength = self.classify_correlation_strength(correlation)
                             
                             significant_pairs.append({
                                 'feature1': i,
                                 'feature2': j,
-                                'correlation': float(corr_matrix.loc[i, j]),
+                                'correlation': float(correlation),
                                 'p_value': float(p_matrix.loc[i, j]),
+                                'strength': strength,
                                 'is_significant': True
                             })
             
@@ -470,25 +628,19 @@ class CorrelationAnalyzer:
                 # Calculate acoustic-semantic correlations for sector
                 acoustic_semantic_corr = pd.DataFrame(
                     index=acoustic_cols,
-                    columns=semantic_cols
+                    columns=semantic_cols,
+                    dtype=float  # Ensure float dtype
                 )
                 
                 for ac in acoustic_cols:
                     for sc in semantic_cols:
-                        # Calculate correlation if possible
-                        valid_data = sector_df[[ac, sc]].dropna()
-                        
-                        if len(valid_data) > 2:  # Need at least 3 points for correlation
-                            try:
-                                corr, p_value = stats.pearsonr(
-                                    valid_data[ac],
-                                    valid_data[sc]
-                                )
-                                acoustic_semantic_corr.loc[ac, sc] = corr
-                            except:
-                                acoustic_semantic_corr.loc[ac, sc] = np.nan
-                        else:
-                            acoustic_semantic_corr.loc[ac, sc] = np.nan
+                        # Calculate correlation with bootstrap
+                        result = self.calculate_correlations_with_bootstrap(
+                            sector_df[ac].values,
+                            sector_df[sc].values,
+                            feature_names=(ac, sc)
+                        )
+                        acoustic_semantic_corr.loc[ac, sc] = result['correlation']
                 
                 sector_correlations[sector] = acoustic_semantic_corr
         
@@ -568,6 +720,23 @@ class CorrelationAnalyzer:
         report.append("=" * 80)
         report.append("")
         
+        # Add reproducibility note
+        report.append("## REPRODUCIBILITY NOTE")
+        report.append("-" * 50)
+        report.append(f"Random seed used for bootstrap procedures: {self.random_seed}")
+        report.append(f"Bootstrap iterations for confidence intervals: 1000")
+        report.append("")
+        
+        # Add constant features note if any
+        if self.constant_features:
+            report.append("## CONSTANT FEATURES WARNING")
+            report.append("-" * 50)
+            report.append("The following features have constant values (all samples identical):")
+            for feat in sorted(self.constant_features):
+                report.append(f"- {feat.replace('_', ' ').title()}")
+            report.append("\nCorrelations involving these features are undefined (NaN).")
+            report.append("")
+        
         # Add summary of significant correlations
         report.append("## 1. SIGNIFICANT CORRELATIONS SUMMARY")
         report.append("-" * 50)
@@ -579,20 +748,30 @@ class CorrelationAnalyzer:
             report.append(f"\n### 1.1 {matrix_name.replace('_', '-').title()} Correlations")
             report.append(f"Total significant correlations: {len(sig_corrs)}")
             
-            # Add top significant correlations
-            top_n = min(10, len(sig_corrs))
-            report.append(f"\nTop {top_n} significant correlations:")
+            # Group by strength
+            strong_corrs = [c for c in sig_corrs if c['strength'] == 'strong']
+            moderate_corrs = [c for c in sig_corrs if c['strength'] == 'moderate']
+            weak_corrs = [c for c in sig_corrs if c['strength'] == 'weak']
             
-            for i, corr in enumerate(sig_corrs[:top_n], 1):
-                feat1 = corr['feature1'].replace('_', ' ').title()
-                feat2 = corr['feature2'].replace('_', ' ').title()
-                r = corr['correlation']
-                p = corr['p_value']
-                
-                direction = "positive" if r > 0 else "negative"
-                strength = "strong" if abs(r) > 0.5 else "moderate" if abs(r) > 0.3 else "weak"
-                
-                report.append(f"{i}. **{feat1}** and **{feat2}**: {r:.3f} ({strength} {direction}, p={p:.4f})")
+            if strong_corrs:
+                report.append(f"\n**Strong correlations (|r| ≥ {self.correlation_thresholds['strong']}):**")
+                for corr in strong_corrs[:5]:  # Top 5
+                    feat1 = corr['feature1'].replace('_', ' ').title()
+                    feat2 = corr['feature2'].replace('_', ' ').title()
+                    r = corr['correlation']
+                    p = corr['p_value']
+                    direction = "positive" if r > 0 else "negative"
+                    report.append(f"- {feat1} & {feat2}: r = {r:.3f} ({direction}, p = {p:.4f})")
+            
+            if moderate_corrs:
+                report.append(f"\n**Moderate correlations ({self.correlation_thresholds['moderate']} ≤ |r| < {self.correlation_thresholds['strong']}):**")
+                for corr in moderate_corrs[:5]:  # Top 5
+                    feat1 = corr['feature1'].replace('_', ' ').title()
+                    feat2 = corr['feature2'].replace('_', ' ').title()
+                    r = corr['correlation']
+                    p = corr['p_value']
+                    direction = "positive" if r > 0 else "negative"
+                    report.append(f"- {feat1} & {feat2}: r = {r:.3f} ({direction}, p = {p:.4f})")
         
         # Add acoustic-semantic correlations
         if 'acoustic_semantic' in correlation_matrices:
@@ -602,161 +781,57 @@ class CorrelationAnalyzer:
             matrix = correlation_matrices['acoustic_semantic']
             
             if not matrix.empty:
-                # Try to find strongest correlations safely
-                try:
-                    # Find strongest correlations
-                    abs_matrix = matrix.abs()
-                    unstacked = abs_matrix.unstack()
-                    unstacked_sorted = unstacked.sort_values(ascending=False)
-                    max_indices = unstacked_sorted.index[:5]
-                    
-                    report.append("\nStrongest acoustic-semantic correlations:")
-                    
-                    for idx in max_indices:
-                        if not isinstance(idx, tuple) or len(idx) != 2:
-                            continue
-                            
-                        feat1, feat2 = idx
-                        
-                        # Check if indices exist in matrix
-                        if feat1 not in matrix.index or feat2 not in matrix.columns:
-                            continue
-                            
-                        r = matrix.loc[feat1, feat2]
-                        
-                        # Safely access p-value if available
-                        p = None
-                        if ('acoustic_semantic' in p_value_matrices and 
-                            feat1 in p_value_matrices['acoustic_semantic'].index and 
-                            feat2 in p_value_matrices['acoustic_semantic'].columns):
-                            p = p_value_matrices['acoustic_semantic'].loc[feat1, feat2]
-                        
-                        feat1_name = feat1.replace('_', ' ').title()
-                        feat2_name = feat2.replace('_', ' ').title()
-                        
-                        direction = "positive" if r > 0 else "negative"
-                        strength = "strong" if abs(r) > 0.5 else "moderate" if abs(r) > 0.3 else "weak"
-                        
-                        sig_status = ""
-                        if p is not None and not pd.isna(p) and p <= self.significance_threshold:
-                            sig_status = " (significant)"
-                        
-                        p_str = f", p={p:.4f}" if p is not None and not pd.isna(p) else ""
-                        report.append(f"- **{feat1_name}** and **{feat2_name}**: {r:.3f} ({strength} {direction}{p_str}){sig_status}")
-                except Exception as e:
-                    logger.warning(f"Error finding strongest correlations: {e}")
-                    report.append("\nError analyzing strongest correlations. See correlation matrices for details.")
-        
-        # Add feature-rating correlations
-        if 'feature_rating' in correlation_matrices:
-            report.append("\n## 3. FEATURE-RATING CORRELATIONS")
-            report.append("-" * 50)
-            
-            matrix = correlation_matrices['feature_rating']
-            
-            if not matrix.empty:
-                # Try to extract correlations with downgrades safely
-                try:
-                    # Extract correlations with downgrades
-                    if 'is_downgrade' in matrix.columns:
-                        downgrade_corrs = matrix['is_downgrade'].dropna().sort_values(ascending=False)
-                        
-                        report.append("\nFeatures most correlated with downgrades:")
-                        for feat, r in downgrade_corrs.head(5).items():
-                            # Safely access p-value if available
-                            p = None
-                            if ('feature_rating' in p_value_matrices and 
-                                feat in p_value_matrices['feature_rating'].index and 
-                                'is_downgrade' in p_value_matrices['feature_rating'].columns):
-                                p = p_value_matrices['feature_rating'].loc[feat, 'is_downgrade']
-                            
-                            feat_name = feat.replace('_', ' ').title()
-                            
-                            direction = "positive" if r > 0 else "negative"
-                            strength = "strong" if abs(r) > 0.5 else "moderate" if abs(r) > 0.3 else "weak"
-                            
-                            sig_status = ""
-                            if p is not None and not pd.isna(p) and p <= self.significance_threshold:
-                                sig_status = " (significant)"
-                            
-                            p_str = f", p={p:.4f}" if p is not None and not pd.isna(p) else ""
-                            report.append(f"- **{feat_name}**: {r:.3f} ({strength} {direction}{p_str}){sig_status}")
-                except Exception as e:
-                    logger.warning(f"Error analyzing downgrade correlations: {e}")
+                # Find convergent stress indicators (both acoustic and semantic negative)
+                report.append("\n### 2.1 Convergent Stress Indicators")
+                report.append("Looking for high correlations between stress-related acoustic features and negative sentiment:")
                 
-                # Try to extract correlations with upgrades safely
-                try:
-                    # Extract correlations with upgrades
-                    if 'is_upgrade' in matrix.columns:
-                        upgrade_corrs = matrix['is_upgrade'].dropna().sort_values(ascending=False)
-                        
-                        report.append("\nFeatures most correlated with upgrades:")
-                        for feat, r in upgrade_corrs.head(5).items():
-                            # Safely access p-value if available
-                            p = None
-                            if ('feature_rating' in p_value_matrices and 
-                                feat in p_value_matrices['feature_rating'].index and 
-                                'is_upgrade' in p_value_matrices['feature_rating'].columns):
-                                p = p_value_matrices['feature_rating'].loc[feat, 'is_upgrade']
-                            
-                            feat_name = feat.replace('_', ' ').title()
-                            
-                            direction = "positive" if r > 0 else "negative"
-                            strength = "strong" if abs(r) > 0.5 else "moderate" if abs(r) > 0.3 else "weak"
-                            
-                            sig_status = ""
-                            if p is not None and not pd.isna(p) and p <= self.significance_threshold:
-                                sig_status = " (significant)"
-                            
-                            p_str = f", p={p:.4f}" if p is not None and not pd.isna(p) else ""
-                            report.append(f"- **{feat_name}**: {r:.3f} ({strength} {direction}{p_str}){sig_status}")
-                except Exception as e:
-                    logger.warning(f"Error analyzing upgrade correlations: {e}")
-        
-        # Add pattern-based correlation interpretation
-        if self.fusion_summary and 'communication_patterns' in self.fusion_summary:
-            report.append("\n## 4. PATTERN-BASED CORRELATION INTERPRETATION")
-            report.append("-" * 50)
-            
-            patterns = self.fusion_summary['communication_patterns']
-            top_correlations = self.fusion_summary.get('top_acoustic_semantic_correlations', {})
-            
-            report.append("\nCommunication pattern distribution:")
-            for pattern, count in patterns.items():
-                pattern_name = pattern.replace('_', ' ').title()
-                report.append(f"- {pattern_name}: {count}")
-            
-            report.append("\nTop acoustic-semantic correlations from pattern analysis:")
-            for pair, corr in top_correlations.items():
-                # Extract feature names from correlation pair string
-                parts = pair.split('_vs_')
-                if len(parts) == 2:
-                    feat1 = parts[0].replace('_', ' ').title()
-                    feat2 = parts[1].replace('_', ' ').title()
-                    
-                    direction = "positive" if corr > 0 else "negative"
-                    strength = "strong" if abs(corr) > 0.5 else "moderate" if abs(corr) > 0.3 else "weak"
-                    
-                    report.append(f"- **{feat1}** and **{feat2}**: {corr:.3f} ({strength} {direction})")
+                # Check specific stress-related correlations
+                stress_acoustic = ['f0_cv', 'f0_std', 'pause_frequency', 'jitter_local']
+                stress_semantic = ['sentiment_negative', 'sentiment_variability']
+                
+                for ac in stress_acoustic:
+                    for sc in stress_semantic:
+                        if ac in matrix.index and sc in matrix.columns:
+                            r = matrix.loc[ac, sc]
+                            if not pd.isna(r):
+                                strength = self.classify_correlation_strength(r)
+                                ac_name = ac.replace('_', ' ').title()
+                                sc_name = sc.replace('_', ' ').title()
+                                direction = "positive" if r > 0 else "negative"
+                                
+                                # Check significance
+                                sig_status = ""
+                                if ('acoustic_semantic' in corrected_p_matrices and 
+                                    ac in corrected_p_matrices['acoustic_semantic'].index and 
+                                    sc in corrected_p_matrices['acoustic_semantic'].columns):
+                                    p = corrected_p_matrices['acoustic_semantic'].loc[ac, sc]
+                                    if not pd.isna(p) and p <= self.significance_threshold:
+                                        sig_status = " **(significant)**"
+                                
+                                report.append(f"- {ac_name} & {sc_name}: r = {r:.3f} ({strength} {direction}){sig_status}")
         
         # Add methodological notes
-        report.append("\n## 5. METHODOLOGICAL NOTES")
+        report.append("\n## 3. METHODOLOGICAL NOTES")
         report.append("-" * 50)
         report.append(f"""
-This correlation analysis implements a comprehensive framework for examining relationships in acoustic-semantic-rating data:
+This correlation analysis implements the methodology specified in the thesis:
 
-1. Multiple Comparison Correction: P-values are adjusted using the {self.correction_method} method to control for false discovery rate.
+1. **Acoustic-Semantic Convergence Thresholds** (as per Section 3.4):
+   - Strong correlation: |r| ≥ {self.correlation_thresholds['strong']}
+   - Moderate correlation: {self.correlation_thresholds['moderate']} ≤ |r| < {self.correlation_thresholds['strong']}
+   - Weak correlation: |r| < {self.correlation_thresholds['moderate']}
 
-2. Significance Threshold: Correlations are considered significant at p < {self.significance_threshold} after correction.
+2. **Multiple Comparison Correction**: P-values are adjusted using the {self.correction_method} method to control for false discovery rate.
 
-3. Effect Size Interpretation: Correlation strength is categorized as:
-   - Strong: |r| > 0.5
-   - Moderate: 0.3 < |r| < 0.5
-   - Weak: |r| < 0.3
+3. **Significance Threshold**: Correlations are considered significant at p < {self.significance_threshold} after correction.
 
-4. Sample Size Considerations: Given the small sample size, correlations should be interpreted cautiously, particularly for sector-specific analyses.
+4. **Bootstrap Confidence Intervals**: Each correlation includes bootstrap-based confidence intervals (1000 iterations, seed={self.random_seed}).
 
-5. Convergent Evidence: Findings are most reliable when supported by multiple correlation indicators and aligned with theoretical expectations.
+5. **Sample Size Considerations**: Given n=24 with extreme class imbalance (21:2:1), correlations should be interpreted as exploratory baselines rather than definitive findings.
+
+6. **Validation Approach**: FinBERT sentiment serves as a directional validator for acoustic stress markers, not as a fused feature.
+
+7. **Constant Features**: Features with identical values across all samples cannot have meaningful correlations and are reported as NaN.
 """)
         
         # Write report
@@ -768,7 +843,7 @@ This correlation analysis implements a comprehensive framework for examining rel
                             significant_correlations: Dict,
                             output_dir: str):
         """
-        Create correlation visualizations
+        Create correlation visualizations with consistent formatting
         
         Args:
             correlation_matrices: Dictionary of correlation matrices
@@ -780,7 +855,7 @@ This correlation analysis implements a comprehensive framework for examining rel
         os.makedirs(viz_dir, exist_ok=True)
         
         # Set style
-        plt.style.use('seaborn-v0_8-darkgrid')
+        plt.style.use('seaborn-v0_8-whitegrid')
         
         # 1. Create heatmaps for correlation matrices
         for name, matrix in correlation_matrices.items():
@@ -788,13 +863,21 @@ This correlation analysis implements a comprehensive framework for examining rel
                 continue
             
             try:
-                # Create heatmap
-                plt.figure(figsize=(12, 10))
+                # Skip matrices with non-numeric data
+                if matrix.dtypes.apply(lambda x: not np.issubdtype(x, np.number)).any():
+                    logger.warning(f"Skipping heatmap for {name}: contains non-numeric data")
+                    continue
+                
+                # Create heatmap with consistent formatting
+                plt.figure(figsize=(6, 5))
                 
                 # Rename indices and columns for better readability
                 matrix_plot = matrix.copy()
                 matrix_plot.index = [idx.replace('_', ' ').title() for idx in matrix_plot.index]
                 matrix_plot.columns = [col.replace('_', ' ').title() for col in matrix_plot.columns]
+                
+                # Replace any remaining non-numeric values with NaN
+                matrix_plot = matrix_plot.apply(pd.to_numeric, errors='coerce')
                 
                 # Create mask for upper triangle if needed
                 if name == 'full' or name == 'acoustic_acoustic' or name == 'semantic_semantic':
@@ -807,11 +890,21 @@ This correlation analysis implements a comprehensive framework for examining rel
                 else:
                     mask = None
                 
-                sns.heatmap(matrix_plot, annot=True, cmap='coolwarm', center=0, fmt='.2f',
-                          mask=mask,
-                          vmin=-1, vmax=1)
+                # Use consistent color palette
+                cmap = sns.diverging_palette(220, 20, as_cmap=True)
                 
-                plt.title(f"{name.replace('_', '-').title()} Correlations", fontsize=14)
+                sns.heatmap(matrix_plot, annot=True, cmap=cmap, center=0, fmt='.2f',
+                          mask=mask, vmin=-1, vmax=1, 
+                          cbar_kws={'label': 'Correlation Coefficient'},
+                          annot_kws={'fontsize': 7})
+                
+                plt.title(f"{name.replace('_', '-').title()} Correlations", 
+                         fontsize=10, fontweight='normal', pad=10)
+                
+                # Adjust label sizes
+                plt.xticks(fontsize=7, rotation=45, ha='right')
+                plt.yticks(fontsize=7)
+                
                 plt.tight_layout()
                 plt.savefig(os.path.join(viz_dir, f"{name}_correlation_heatmap.png"), dpi=300)
                 plt.close()
@@ -828,40 +921,66 @@ This correlation analysis implements a comprehensive framework for examining rel
                 top_n = min(10, len(sig_corrs))
                 top_corrs = sig_corrs[:top_n]
                 
-                # Create bar chart
-                plt.figure(figsize=(12, 8))
+                # Create bar chart with consistent formatting
+                plt.figure(figsize=(6, 5))
                 
                 # Prepare data
-                labels = [f"{c['feature1'].replace('_', ' ').title()} & {c['feature2'].replace('_', ' ').title()}" 
-                        for c in top_corrs]
-                values = [c['correlation'] for c in top_corrs]
-                colors = ['red' if v < 0 else 'blue' for v in values]
+                labels = []
+                values = []
+                colors = []
                 
-                # Sort by absolute correlation
-                sorted_indices = np.argsort(np.abs(values))[::-1]
-                labels = [labels[i] for i in sorted_indices]
-                values = [values[i] for i in sorted_indices]
-                colors = [colors[i] for i in sorted_indices]
+                for c in top_corrs:
+                    feat1 = c['feature1'].replace('_', ' ').title()
+                    feat2 = c['feature2'].replace('_', ' ').title()
+                    labels.append(f"{feat1}\n& {feat2}")
+                    values.append(c['correlation'])
+                    
+                    # Color based on strength and direction
+                    if c['strength'] == 'strong':
+                        color = self.color_palette[7] if c['correlation'] < 0 else self.color_palette[5]
+                    elif c['strength'] == 'moderate':
+                        color = self.color_palette[6] if c['correlation'] < 0 else self.color_palette[3]
+                    else:
+                        color = self.color_palette[4]
+                    colors.append(color)
                 
                 # Create horizontal bar chart
-                bars = plt.barh(range(len(values)), values, color=colors, alpha=0.7)
+                bars = plt.barh(range(len(values)), values, color=colors, alpha=0.8)
                 
                 # Add labels
-                plt.yticks(range(len(labels)), labels)
+                plt.yticks(range(len(labels)), labels, fontsize=7)
                 plt.axvline(x=0, color='black', linestyle='-', alpha=0.3)
                 
-                # Add correlation values
-                for i, bar in enumerate(bars):
-                    value = values[i]
-                    color = 'white' if abs(value) > 0.5 else 'black'
-                    ha = 'left' if value < 0 else 'right'
-                    x_pos = value + (0.02 if value < 0 else -0.02)
-                    plt.text(x_pos, i, f"{value:.3f}", ha=ha, va='center', color=color, fontsize=10)
+                # Add correlation values - position to avoid overlap
+                for i, (bar, val) in enumerate(zip(bars, values)):
+                    # Position text to avoid overlap with bar
+                    if abs(val) < 0.1:
+                        # For small values, place outside
+                        x_pos = 0.15 if val > 0 else -0.15
+                        ha = 'left' if val > 0 else 'right'
+                    else:
+                        # For larger values, place at the end of bar with padding
+                        x_pos = val + (0.05 if val > 0 else -0.05)
+                        ha = 'left' if val > 0 else 'right'
+                    
+                    plt.text(x_pos, i, f"{val:.3f}", ha=ha, va='center', 
+                           fontsize=7, fontweight='normal')
                 
-                plt.xlabel('Correlation Coefficient (r)')
-                plt.title(f"Top {top_n} {name.replace('_', '-').title()} Correlations", fontsize=14)
-                plt.xlim(-1, 1)
-                plt.grid(True, axis='x', linestyle='--', alpha=0.5)
+                # Add threshold lines
+                plt.axvline(x=self.correlation_thresholds['strong'], 
+                          color=self.color_palette[5], linestyle='--', alpha=0.5, linewidth=1)
+                plt.axvline(x=-self.correlation_thresholds['strong'], 
+                          color=self.color_palette[7], linestyle='--', alpha=0.5, linewidth=1)
+                plt.axvline(x=self.correlation_thresholds['moderate'], 
+                          color=self.color_palette[3], linestyle='--', alpha=0.3, linewidth=1)
+                plt.axvline(x=-self.correlation_thresholds['moderate'], 
+                          color=self.color_palette[6], linestyle='--', alpha=0.3, linewidth=1)
+                
+                plt.xlabel('Correlation Coefficient (r)', fontsize=8, fontweight='normal')
+                plt.title(f"Top {top_n} {name.replace('_', '-').title()} Correlations", 
+                         fontsize=10, fontweight='normal', pad=10)
+                plt.xlim(-1.1, 1.1)  # Extend limits for text
+                plt.grid(True, axis='x', linestyle='--', alpha=0.3)
                 
                 plt.tight_layout()
                 plt.savefig(os.path.join(viz_dir, f"{name}_top_correlations.png"), dpi=300)
@@ -872,45 +991,51 @@ This correlation analysis implements a comprehensive framework for examining rel
         # 3. Create scatter plot for key correlations
         if self.pca_results is not None and 'PC1' in self.pca_results.columns and 'PC2' in self.pca_results.columns:
             try:
-                plt.figure(figsize=(12, 10))
+                plt.figure(figsize=(6, 5))
                 
                 # Create scatter plot of PCA results
                 if 'communication_pattern' in self.pca_results.columns:
-                    # Define color palette
-                    palette = {
-                        'high_stress': 'red',
-                        'moderate_stress': 'orange',
-                        'high_excitement': 'green',
-                        'moderate_excitement': 'lightgreen',
-                        'baseline_stability': 'blue',
-                        'mixed_pattern': 'gray'
+                    # Define color mapping using palette
+                    pattern_colors = {
+                        'high_stress': self.color_palette[7],
+                        'moderate_stress': self.color_palette[5],
+                        'high_excitement': self.color_palette[2],
+                        'moderate_excitement': self.color_palette[3],
+                        'baseline_stability': self.color_palette[1],
+                        'mixed_pattern': self.color_palette[4]
                     }
                     
                     # Filter palette to include only existing patterns
                     unique_patterns = self.pca_results['communication_pattern'].unique()
-                    used_palette = {k: v for k, v in palette.items() if k in unique_patterns}
+                    used_palette = {k: v for k, v in pattern_colors.items() if k in unique_patterns}
                     
                     # Create scatter plot with pattern colors
-                    sns.scatterplot(
-                        data=self.pca_results, 
-                        x='PC1', y='PC2', 
-                        hue='communication_pattern',
-                        palette=used_palette,
-                        s=100, alpha=0.7
-                    )
+                    for pattern in unique_patterns:
+                        if pattern in used_palette:
+                            pattern_data = self.pca_results[self.pca_results['communication_pattern'] == pattern]
+                            plt.scatter(pattern_data['PC1'], pattern_data['PC2'], 
+                                      color=used_palette[pattern], 
+                                      label=pattern.replace('_', ' ').title(),
+                                      s=60, alpha=0.7, edgecolors=self.color_palette[6])
                     
                     # Get explained variance from fusion summary
                     if self.fusion_summary and 'pca_explained_variance' in self.fusion_summary:
                         explained_var = self.fusion_summary['pca_explained_variance']
                         if len(explained_var) >= 2:
-                            plt.xlabel(f"PC1 ({explained_var[0]*100:.1f}% variance)")
-                            plt.ylabel(f"PC2 ({explained_var[1]*100:.1f}% variance)")
+                            plt.xlabel(f"PC1 ({explained_var[0]*100:.1f}% variance)", 
+                                     fontsize=8, fontweight='normal')
+                            plt.ylabel(f"PC2 ({explained_var[1]*100:.1f}% variance)", 
+                                     fontsize=8, fontweight='normal')
                     
-                    # Add file_id labels
+                    # Add file_id labels - position to avoid overlap
                     for i, row in self.pca_results.iterrows():
-                        plt.text(row['PC1'], row['PC2'], row['file_id'], fontsize=8)
+                        # Offset text slightly above point
+                        plt.text(row['PC1'], row['PC2'] + 0.02, row['file_id'], 
+                               fontsize=6, ha='center', va='bottom')
                     
-                    plt.title("PCA of Combined Acoustic-Semantic Features", fontsize=14)
+                    plt.title("PCA of Combined Acoustic-Semantic Features", 
+                            fontsize=10, fontweight='normal', pad=10)
+                    plt.legend(loc='best', fontsize=7)
                     plt.grid(True, linestyle='--', alpha=0.3)
                     
                     plt.tight_layout()
@@ -936,13 +1061,16 @@ def main():
                        help="Significance threshold for correlations")
     parser.add_argument("--correction", type=str, default="fdr_bh",
                        help="Method for multiple comparisons correction")
+    parser.add_argument("--random_seed", type=int, default=42,
+                       help="Random seed for reproducibility")
     
     args = parser.parse_args()
     
     # Initialize correlation analyzer
     analyzer = CorrelationAnalyzer(
         significance_threshold=args.significance,
-        correction_method=args.correction
+        correction_method=args.correction,
+        random_seed=args.random_seed
     )
     
     # Create output directory

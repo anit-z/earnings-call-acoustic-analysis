@@ -13,10 +13,8 @@
   "acoustic_features": {
     "f0_cv": 0.0919046176718096,
     "f0_std": 0.4928487680996267,
-    "jitter_local": 0.0788678860744833,
-    "speech_rate": 1.0,
     "pause_frequency": 0.0,
-    "acoustic_volatility_index": 1.0
+    "jitter_local": 0.0788678860744833
   },
   "semantic_features": {
     "sentiment_positive": 0.1214101351796523,
@@ -40,74 +38,73 @@
     "information_content": 0
   },
   "percentile_rankings": {
-    "f0_cv": 29.166666666666668,
-    "f0_std": 45.83333333333333,
-    "jitter_local": 29.166666666666668,
-    "speech_rate": 100.0,
-    "pause_frequency": 25.0,
-    "acoustic_volatility_index": 100.0,
-    "sentiment_positive": 37.5,
-    "sentiment_negative": 95.83333333333334,
-    "sentiment_neutral": 8.333333333333332,
-    "sentiment_variability": 8.333333333333332,
-    "acoustic_semantic_alignment": 91.66666666666666
+    "f0_cv": 27.083333333333332,
+    "f0_std": 43.75,
+    "pause_frequency": 12.5,
+    "jitter_local": 27.083333333333332,
+    "sentiment_positive": 35.41666666666667,
+    "sentiment_negative": 93.75,
+    "sentiment_neutral": 6.25,
+    "sentiment_variability": 6.25,
+    "acoustic_semantic_alignment": 89.58333333333334
   },
   "percentile_rankings_ci": {
     "f0_cv": {
-      "ci_lower": 16.666666666666664,
-      "ci_upper": 41.66666666666667,
-      "ci_width": 25.000000000000007
+      "ci_lower": 15.625,
+      "ci_upper": 39.58333333333333,
+      "ci_width": 23.95833333333333
     },
     "f0_std": {
-      "ci_lower": 33.33333333333333,
-      "ci_upper": 60.416666666666664,
-      "ci_width": 27.083333333333336
-    },
-    "jitter_local": {
-      "ci_lower": 16.666666666666664,
-      "ci_upper": 41.66666666666667,
-      "ci_width": 25.000000000000007
-    },
-    "speech_rate": {
-      "ci_lower": 100.0,
-      "ci_upper": 100.0,
-      "ci_width": 0.0
+      "ci_lower": 30.208333333333332,
+      "ci_upper": 57.291666666666664,
+      "ci_width": 27.083333333333332
     },
     "pause_frequency": {
-      "ci_lower": 14.583333333333334,
-      "ci_upper": 37.5,
-      "ci_width": 22.916666666666664
+      "ci_lower": 7.291666666666667,
+      "ci_upper": 18.75,
+      "ci_width": 11.458333333333332
     },
-    "acoustic_volatility_index": {
-      "ci_lower": 100.0,
-      "ci_upper": 100.0,
-      "ci_width": 0.0
+    "jitter_local": {
+      "ci_lower": 15.625,
+      "ci_upper": 39.58333333333333,
+      "ci_width": 23.95833333333333
     },
     "sentiment_positive": {
-      "ci_lower": 25.0,
-      "ci_upper": 52.083333333333336,
-      "ci_width": 27.083333333333336
+      "ci_lower": 22.916666666666664,
+      "ci_upper": 48.95833333333333,
+      "ci_width": 26.041666666666664
     },
     "sentiment_negative": {
-      "ci_lower": 89.58333333333334,
-      "ci_upper": 100.0,
-      "ci_width": 10.416666666666657
+      "ci_lower": 86.45833333333334,
+      "ci_upper": 98.95833333333334,
+      "ci_width": 12.5
     },
     "sentiment_neutral": {
-      "ci_lower": 2.083333333333333,
-      "ci_upper": 16.666666666666664,
-      "ci_width": 14.583333333333332
+      "ci_lower": 1.0416666666666665,
+      "ci_upper": 12.5,
+      "ci_width": 11.458333333333334
     },
     "sentiment_variability": {
-      "ci_lower": 2.083333333333333,
-      "ci_upper": 16.666666666666664,
-      "ci_width": 14.583333333333332
+      "ci_lower": 1.0416666666666665,
+      "ci_upper": 13.541666666666666,
+      "ci_width": 12.5
     },
     "acoustic_semantic_alignment": {
-      "ci_lower": 83.33333333333334,
-      "ci_upper": 97.91666666666666,
-      "ci_width": 14.583333333333314
+      "ci_lower": 81.25,
+      "ci_upper": 96.875,
+      "ci_width": 15.625
     }
+  },
+  "mad_effect_sizes": {
+    "f0_cv": -0.8421077064262638,
+    "f0_std": -0.014383453096075062,
+    "pause_frequency": -1.1923081086298501,
+    "jitter_local": -0.8078924946294189,
+    "sentiment_positive": -0.660859672200584,
+    "sentiment_negative": 2.98146964906877,
+    "sentiment_neutral": -2.98142627520743,
+    "sentiment_variability": -6.491290216144343,
+    "acoustic_semantic_alignment": 1.1012565270191275
   },
   "audio_metadata": {
     "original_sr": 22050,
@@ -209,9 +206,9 @@
     "num_segments_analyzed": 10
   },
   "insights": [
-    "Very high acoustic volatility: 100.0% (95% CI: 100.0-100.0%) - indicates potential executive stress",
-    "Highly negative sentiment: 95.8% (95% CI: 89.6-100.0%) - suggests challenging financial conditions",
-    "Strong acoustic-semantic alignment: 91.7% (95% CI: 83.3-97.9%) - consistent stress signals",
+    "Low pause frequency: 12.5% (95% CI: 7.3-18.8%) - indicates fluent, confident speech",
+    "Highly negative sentiment: 93.8% (95% CI: 86.5-99.0%) (MAD effect: 2.98) - suggests challenging financial conditions",
+    "Strong acoustic-semantic alignment: 89.6% (95% CI: 81.2-96.9%) - consistent stress signals",
     "High stress communication pattern detected - convergence of multiple stress indicators",
     "Rating affirmation followed this earnings call - stable financial outcomes",
     "Highest vocal stress detected at 40-50s (F0 CV: 0.333)"

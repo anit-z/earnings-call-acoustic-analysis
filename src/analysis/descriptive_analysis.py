@@ -36,24 +36,30 @@ class DescriptiveAnalysis:
     
     def __init__(self, 
                  n_bootstrap: int = 10000, 
-                 confidence_level: float = 0.95):
+                 confidence_level: float = 0.95,
+                 random_seed: int = 42):
         """
         Initialize descriptive analysis
         
         Args:
             n_bootstrap: Number of bootstrap iterations for CIs
             confidence_level: Confidence level for intervals
+            random_seed: Random seed for reproducibility
         """
         self.n_bootstrap = n_bootstrap
         self.confidence_level = confidence_level
         self.alpha = 1 - confidence_level
+        self.random_seed = random_seed
+        
+        # Set random seed for reproducibility
+        np.random.seed(self.random_seed)
         
         # Key acoustic features for analysis
         self.key_acoustic_features = [
-            'f0_cv',
-            'jitter_local',
-            'pause_frequency',
-            'acoustic_volatility_index'
+            'f0_cv',      # F0 Coefficient of Variation - Primary feature
+            'f0_std',     # F0 Standard Deviation - Complementary pitch measure
+            'pause_frequency',  # Pause Frequency - Temporal stress indicator
+            'jitter_local'      # Jitter Local - Voice quality measure
         ]
         
         # Key semantic features for analysis
@@ -66,6 +72,18 @@ class DescriptiveAnalysis:
         # Key combined features for analysis
         self.key_combined_features = [
             'acoustic_semantic_alignment'
+        ]
+        
+        # Color palette
+        self.color_palette = [
+            '#D0E7F9',   # Very light sky blue
+            '#A8CDFE',   # Light sky blue
+            '#5BA0FF',   # Bright, clear blue
+            '#2C60D9',   # Rich medium blue
+            '#1D8AA2',   # Teal-blue, more cyan/green hint for contrast
+            '#1780B9',   # Deep cyan-blue (teal hint)
+            '#0D427F',   # Dark blue-gray
+            '#062F5B'    # Very dark blue
         ]
     
     def load_data(self, 
@@ -198,10 +216,14 @@ class DescriptiveAnalysis:
         
         percentile_rank = (less_than + 0.5 * equal_to) / n * 100
         
-        # Calculate bootstrap confidence interval
+        # Calculate bootstrap confidence interval with fixed seed for reproducibility
         bootstrap_ranks = []
+        
+        # Set local random state for bootstrap reproducibility
+        rng = np.random.RandomState(self.random_seed)
+        
         for _ in range(self.n_bootstrap):
-            bootstrap_sample = np.random.choice(
+            bootstrap_sample = rng.choice(
                 baseline, 
                 size=len(baseline), 
                 replace=True
@@ -222,6 +244,35 @@ class DescriptiveAnalysis:
             'ci_upper': ci_upper,
             'ci_width': ci_upper - ci_lower
         }
+    
+    def calculate_mad_effect_size(self, 
+                                group_value: float, 
+                                baseline_median: float, 
+                                baseline_mad: float) -> float:
+        """
+        Calculate MAD-based effect size
+        
+        MAD effect size = (value - baseline_median) / baseline_MAD
+        
+        This is robust to outliers and can be calculated even for n=1
+        
+        Args:
+            group_value: Value from the group
+            baseline_median: Median of baseline distribution
+            baseline_mad: MAD of baseline distribution
+            
+        Returns:
+            MAD-based effect size
+        """
+        if baseline_mad == 0:
+            # If MAD is 0, all baseline values are identical
+            # Return 0 if group value equals baseline, else return sign of difference
+            if group_value == baseline_median:
+                return 0.0
+            else:
+                return np.sign(group_value - baseline_median)
+        
+        return (group_value - baseline_median) / baseline_mad
     
     def analyze_group_vs_baseline(self, 
                                 group_df: pd.DataFrame, 
@@ -265,10 +316,11 @@ class DescriptiveAnalysis:
                 'baseline_p25': float(np.percentile(baseline_values, 25)),
                 'baseline_p75': float(np.percentile(baseline_values, 75)),
                 'group_values': [],
-                'percentile_ranks': []
+                'percentile_ranks': [],
+                'mad_effect_sizes': []
             }
             
-            # Calculate percentile ranks for each value in group
+            # Calculate percentile ranks and MAD effect sizes for each value in group
             for _, row in group_df.iterrows():
                 if pd.isna(row[feature]):
                     continue
@@ -276,8 +328,16 @@ class DescriptiveAnalysis:
                 value = row[feature]
                 percentile_rank = self.calculate_percentile_rank(value, baseline_values)
                 
+                # Calculate MAD-based effect size
+                mad_effect = self.calculate_mad_effect_size(
+                    value,
+                    feature_results['baseline_median'],
+                    feature_results['baseline_mad']
+                )
+                
                 feature_results['group_values'].append(float(value))
                 feature_results['percentile_ranks'].append(percentile_rank)
+                feature_results['mad_effect_sizes'].append(float(mad_effect))
             
             # Add group statistics
             group_values = np.array(feature_results['group_values'])
@@ -285,8 +345,9 @@ class DescriptiveAnalysis:
                 feature_results['group_mean'] = float(np.mean(group_values))
                 feature_results['group_std'] = float(np.std(group_values))
                 feature_results['group_median'] = float(np.median(group_values))
+                feature_results['group_mad'] = float(stats.median_abs_deviation(group_values)) if len(group_values) > 1 else 0.0
                 
-                # Add effect size (standardized mean difference)
+                # Add traditional Cohen's d effect size
                 if feature_results['baseline_std'] > 0:
                     feature_results['cohens_d'] = float(
                         (feature_results['group_mean'] - feature_results['baseline_mean']) / 
@@ -294,6 +355,9 @@ class DescriptiveAnalysis:
                     )
                 else:
                     feature_results['cohens_d'] = 0.0
+                
+                # Add average MAD effect size
+                feature_results['mean_mad_effect'] = float(np.mean(feature_results['mad_effect_sizes']))
             
             results['acoustic_features'][feature] = feature_results
         
@@ -313,10 +377,11 @@ class DescriptiveAnalysis:
                 'baseline_median': float(np.median(baseline_values)),
                 'baseline_mad': float(stats.median_abs_deviation(baseline_values)),
                 'group_values': [],
-                'percentile_ranks': []
+                'percentile_ranks': [],
+                'mad_effect_sizes': []
             }
             
-            # Calculate percentile ranks for each value in group
+            # Calculate percentile ranks and MAD effect sizes for each value in group
             for _, row in group_df.iterrows():
                 if pd.isna(row[feature]):
                     continue
@@ -324,8 +389,16 @@ class DescriptiveAnalysis:
                 value = row[feature]
                 percentile_rank = self.calculate_percentile_rank(value, baseline_values)
                 
+                # Calculate MAD-based effect size
+                mad_effect = self.calculate_mad_effect_size(
+                    value,
+                    feature_results['baseline_median'],
+                    feature_results['baseline_mad']
+                )
+                
                 feature_results['group_values'].append(float(value))
                 feature_results['percentile_ranks'].append(percentile_rank)
+                feature_results['mad_effect_sizes'].append(float(mad_effect))
             
             # Add group statistics
             group_values = np.array(feature_results['group_values'])
@@ -333,8 +406,9 @@ class DescriptiveAnalysis:
                 feature_results['group_mean'] = float(np.mean(group_values))
                 feature_results['group_std'] = float(np.std(group_values))
                 feature_results['group_median'] = float(np.median(group_values))
+                feature_results['group_mad'] = float(stats.median_abs_deviation(group_values)) if len(group_values) > 1 else 0.0
                 
-                # Add effect size (standardized mean difference)
+                # Add traditional Cohen's d effect size
                 if feature_results['baseline_std'] > 0:
                     feature_results['cohens_d'] = float(
                         (feature_results['group_mean'] - feature_results['baseline_mean']) / 
@@ -342,6 +416,9 @@ class DescriptiveAnalysis:
                     )
                 else:
                     feature_results['cohens_d'] = 0.0
+                
+                # Add average MAD effect size
+                feature_results['mean_mad_effect'] = float(np.mean(feature_results['mad_effect_sizes']))
             
             results['semantic_features'][feature] = feature_results
         
@@ -361,10 +438,11 @@ class DescriptiveAnalysis:
                 'baseline_median': float(np.median(baseline_values)),
                 'baseline_mad': float(stats.median_abs_deviation(baseline_values)),
                 'group_values': [],
-                'percentile_ranks': []
+                'percentile_ranks': [],
+                'mad_effect_sizes': []
             }
             
-            # Calculate percentile ranks for each value in group
+            # Calculate percentile ranks and MAD effect sizes for each value in group
             for _, row in group_df.iterrows():
                 if pd.isna(row[feature]):
                     continue
@@ -372,8 +450,16 @@ class DescriptiveAnalysis:
                 value = row[feature]
                 percentile_rank = self.calculate_percentile_rank(value, baseline_values)
                 
+                # Calculate MAD-based effect size
+                mad_effect = self.calculate_mad_effect_size(
+                    value,
+                    feature_results['baseline_median'],
+                    feature_results['baseline_mad']
+                )
+                
                 feature_results['group_values'].append(float(value))
                 feature_results['percentile_ranks'].append(percentile_rank)
+                feature_results['mad_effect_sizes'].append(float(mad_effect))
             
             # Add group statistics
             group_values = np.array(feature_results['group_values'])
@@ -381,8 +467,9 @@ class DescriptiveAnalysis:
                 feature_results['group_mean'] = float(np.mean(group_values))
                 feature_results['group_std'] = float(np.std(group_values))
                 feature_results['group_median'] = float(np.median(group_values))
+                feature_results['group_mad'] = float(stats.median_abs_deviation(group_values)) if len(group_values) > 1 else 0.0
                 
-                # Add effect size (standardized mean difference)
+                # Add traditional Cohen's d effect size
                 if feature_results['baseline_std'] > 0:
                     feature_results['cohens_d'] = float(
                         (feature_results['group_mean'] - feature_results['baseline_mean']) / 
@@ -390,6 +477,9 @@ class DescriptiveAnalysis:
                     )
                 else:
                     feature_results['cohens_d'] = 0.0
+                
+                # Add average MAD effect size
+                feature_results['mean_mad_effect'] = float(np.mean(feature_results['mad_effect_sizes']))
             
             results['combined_features'][feature] = feature_results
         
@@ -408,21 +498,25 @@ class DescriptiveAnalysis:
         Returns:
             Overall assessment dictionary
         """
-        # Check if we have acoustic volatility data
-        acoustic_vol_key = 'acoustic_volatility_index'
+        # Check if we have f0_cv data (primary acoustic feature)
+        acoustic_key = 'f0_cv'
         semantic_neg_key = 'sentiment_negative'
         
-        if (acoustic_vol_key in results['acoustic_features'] and 
+        if (acoustic_key in results['acoustic_features'] and 
             semantic_neg_key in results['semantic_features']):
             
             # Get effect sizes
-            acoustic_d = results['acoustic_features'][acoustic_vol_key].get('cohens_d', 0)
+            acoustic_d = results['acoustic_features'][acoustic_key].get('cohens_d', 0)
             semantic_d = results['semantic_features'][semantic_neg_key].get('cohens_d', 0)
+            
+            # Get MAD effect sizes
+            acoustic_mad = results['acoustic_features'][acoustic_key].get('mean_mad_effect', 0)
+            semantic_mad = results['semantic_features'][semantic_neg_key].get('mean_mad_effect', 0)
             
             # Get percentile ranks (average if multiple values)
             acoustic_percentiles = [
                 p['percentile'] for p in 
-                results['acoustic_features'][acoustic_vol_key].get('percentile_ranks', [])
+                results['acoustic_features'][acoustic_key].get('percentile_ranks', [])
             ]
             
             semantic_percentiles = [
@@ -453,10 +547,12 @@ class DescriptiveAnalysis:
             return {
                 'pattern': pattern,
                 'strength': strength,
-                'acoustic_volatility_percentile': float(acoustic_percentile),
+                'f0_cv_percentile': float(acoustic_percentile),
                 'negative_sentiment_percentile': float(semantic_percentile),
-                'acoustic_volatility_effect_size': float(acoustic_d),
+                'f0_cv_effect_size': float(acoustic_d),
                 'negative_sentiment_effect_size': float(semantic_d),
+                'f0_cv_mad_effect': float(acoustic_mad),
+                'negative_sentiment_mad_effect': float(semantic_mad),
                 'confidence': "high" if len(acoustic_percentiles) > 3 else "low"
             }
         
@@ -526,14 +622,16 @@ class DescriptiveAnalysis:
                     if pd.isna(value):
                         continue
                         
-                    # Get percentile rank from analysis results
+                    # Get percentile rank and MAD effect from analysis results
                     percentile_data = None
+                    mad_effect = None
                     if (feature in group_results['acoustic_features'] and 
                         'percentile_ranks' in group_results['acoustic_features'][feature]):
                         
                         for i, val in enumerate(group_results['acoustic_features'][feature]['group_values']):
                             if abs(val - value) < 1e-6:  # Allow for floating point errors
                                 percentile_data = group_results['acoustic_features'][feature]['percentile_ranks'][i]
+                                mad_effect = group_results['acoustic_features'][feature]['mad_effect_sizes'][i]
                                 break
                     
                     case_data['acoustic_features'][feature] = {
@@ -542,7 +640,8 @@ class DescriptiveAnalysis:
                         'percentile_ci': [
                             percentile_data['ci_lower'] if percentile_data else None,
                             percentile_data['ci_upper'] if percentile_data else None
-                        ]
+                        ],
+                        'mad_effect': float(mad_effect) if mad_effect is not None else None
                     }
                 
                 # Add semantic features
@@ -554,14 +653,16 @@ class DescriptiveAnalysis:
                     if pd.isna(value):
                         continue
                         
-                    # Get percentile rank from analysis results
+                    # Get percentile rank and MAD effect from analysis results
                     percentile_data = None
+                    mad_effect = None
                     if (feature in group_results['semantic_features'] and 
                         'percentile_ranks' in group_results['semantic_features'][feature]):
                         
                         for i, val in enumerate(group_results['semantic_features'][feature]['group_values']):
                             if abs(val - value) < 1e-6:  # Allow for floating point errors
                                 percentile_data = group_results['semantic_features'][feature]['percentile_ranks'][i]
+                                mad_effect = group_results['semantic_features'][feature]['mad_effect_sizes'][i]
                                 break
                     
                     case_data['semantic_features'][feature] = {
@@ -570,7 +671,8 @@ class DescriptiveAnalysis:
                         'percentile_ci': [
                             percentile_data['ci_lower'] if percentile_data else None,
                             percentile_data['ci_upper'] if percentile_data else None
-                        ]
+                        ],
+                        'mad_effect': float(mad_effect) if mad_effect is not None else None
                     }
                 
                 # Add combined features
@@ -645,6 +747,7 @@ class DescriptiveAnalysis:
                     row[f'{group} Mean'] = group_data['group_mean']
                     row[f'{group} Percentile'] = np.mean(percentile_ranks) if percentile_ranks else None
                     row[f'{group} Cohen\'s d'] = group_data['cohens_d']
+                    row[f'{group} MAD Effect'] = group_data['mean_mad_effect']
             
             acoustic_summary.append(row)
         
@@ -679,6 +782,7 @@ class DescriptiveAnalysis:
                     row[f'{group} Mean'] = group_data['group_mean']
                     row[f'{group} Percentile'] = np.mean(percentile_ranks) if percentile_ranks else None
                     row[f'{group} Cohen\'s d'] = group_data['cohens_d']
+                    row[f'{group} MAD Effect'] = group_data['mean_mad_effect']
             
             semantic_summary.append(row)
         
@@ -697,10 +801,12 @@ class DescriptiveAnalysis:
                     'N': results['n_group'],
                     'Pattern': assessment['pattern'],
                     'Strength': assessment['strength'],
-                    'Acoustic Percentile': assessment['acoustic_volatility_percentile'],
-                    'Semantic Percentile': assessment['negative_sentiment_percentile'],
-                    'Acoustic Effect Size': assessment['acoustic_volatility_effect_size'],
-                    'Semantic Effect Size': assessment['negative_sentiment_effect_size'],
+                    'F0_CV Percentile': assessment.get('f0_cv_percentile', 'N/A'),
+                    'Semantic Percentile': assessment.get('negative_sentiment_percentile', 'N/A'),
+                    'F0_CV Effect Size': assessment.get('f0_cv_effect_size', 'N/A'),
+                    'F0_CV MAD Effect': assessment.get('f0_cv_mad_effect', 'N/A'),
+                    'Semantic Effect Size': assessment.get('negative_sentiment_effect_size', 'N/A'),
+                    'Semantic MAD Effect': assessment.get('negative_sentiment_mad_effect', 'N/A'),
                     'Confidence': assessment['confidence']
                 }
                 
@@ -739,7 +845,7 @@ class DescriptiveAnalysis:
         os.makedirs(output_dir, exist_ok=True)
         
         # Set up style
-        plt.style.use('seaborn-v0_8-darkgrid')
+        plt.style.use('seaborn-v0_8-whitegrid')
         
         # 1. Create acoustic features boxplots
         self._create_acoustic_boxplots(analysis_results, case_studies, output_dir)
@@ -770,7 +876,7 @@ class DescriptiveAnalysis:
             baseline_results = analysis_results['all']
         
         # Create figure with subplots
-        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+        fig, axes = plt.subplots(2, 2, figsize=(6, 5))
         axes = axes.flatten()
         
         for i, feature in enumerate(self.key_acoustic_features[:4]):  # Limit to 4 features
@@ -781,12 +887,19 @@ class DescriptiveAnalysis:
             
             # Get baseline data
             baseline_data = baseline_results['acoustic_features'][feature]
+            
+            # Set random seed for reproducible jitter
+            np.random.seed(self.random_seed)
             baseline_values = baseline_data['baseline_mean'] + np.random.normal(0, 0.01, baseline_results['n_baseline'])
             
             # Create boxplot
             ax.boxplot([baseline_values], positions=[0], widths=0.6, patch_artist=True,
-                     boxprops=dict(facecolor='lightblue', color='blue'),
-                     medianprops=dict(color='blue', linewidth=2))
+                     boxprops=dict(facecolor=self.color_palette[1], color=self.color_palette[3]),
+                     medianprops=dict(color=self.color_palette[5], linewidth=1.5))
+            
+            # Calculate y-axis range for better label positioning
+            y_min, y_max = ax.get_ylim()
+            y_range = y_max - y_min
             
             # Add case study points
             for j, (file_id, case) in enumerate(case_studies.items()):
@@ -797,26 +910,28 @@ class DescriptiveAnalysis:
                     percentile = case['acoustic_features'][feature]['percentile']
                     
                     # Color based on rating outcome
-                    color = 'red' if case['rating_outcome'] == 'downgrade' else 'green'
+                    color = self.color_palette[7] if case['rating_outcome'] == 'downgrade' else self.color_palette[2]
                     
                     # Plot point
-                    ax.scatter([j + 1], [value], color=color, s=100, zorder=5)
+                    ax.scatter([j + 1], [value], color=color, s=50, zorder=5)
                     
-                    # Add label
-                    ax.text(j + 1, value, f"{percentile:.0f}%", 
-                          ha='center', va='bottom', fontsize=9)
+                    # Add label with increased vertical offset to avoid overlap
+                    label_offset = 0.30 * y_range  # Increased from 0.01 to 0.08
+                    ax.text(j + 1, value + label_offset, 
+                          f"{percentile:.0f}%", 
+                          ha='center', va='bottom', fontsize=7, fontweight='normal')
                     
                     # Add file_id as x-tick label
                     ax.set_xticks([0] + list(range(1, len(case_studies) + 1)))
-                    ax.set_xticklabels(['Baseline'] + list(case_studies.keys()), rotation=45, ha='right')
+                    ax.set_xticklabels(['Baseline'] + list(case_studies.keys()), rotation=45, ha='right', fontsize=7)
             
             # Add title and labels
             feature_name = feature.replace('_', ' ').title()
-            ax.set_title(f"{feature_name}")
-            ax.set_ylabel('Feature Value')
+            ax.set_title(f"{feature_name}", fontsize=9, fontweight='normal', pad=10)
+            ax.set_ylabel('Feature Value', fontsize=8, fontweight='normal')
             
             # Add grid
-            ax.grid(True, linestyle='--', alpha=0.7)
+            ax.grid(True, linestyle='--', alpha=0.3)
         
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'acoustic_boxplots.png'), dpi=300)
@@ -837,7 +952,7 @@ class DescriptiveAnalysis:
             return
             
         # Create figure with subplots
-        fig, axes = plt.subplots(len(non_affirmations), 1, figsize=(12, 5 * len(non_affirmations)))
+        fig, axes = plt.subplots(len(non_affirmations), 1, figsize=(6, 5))
         
         # Handle single subplot case
         if len(non_affirmations) == 1:
@@ -883,39 +998,50 @@ class DescriptiveAnalysis:
             
             if not features:
                 ax.text(0.5, 0.5, 'No percentile data available', 
-                       ha='center', va='center', transform=ax.transAxes)
+                       ha='center', va='center', transform=ax.transAxes, fontsize=8)
                 continue
             
             # Create horizontal bar chart
             bars = ax.barh(features, percentiles, xerr=np.array(errors).T, 
-                         color='skyblue', alpha=0.7, ecolor='black', capsize=5)
+                         color=self.color_palette[1], alpha=0.8, ecolor=self.color_palette[6], capsize=3)
             
             # Color bars based on percentile
             for j, bar in enumerate(bars):
                 if percentiles[j] > 90:
-                    bar.set_color('red')
+                    bar.set_color(self.color_palette[7])
                 elif percentiles[j] > 75:
-                    bar.set_color('orange')
+                    bar.set_color(self.color_palette[5])
                 elif percentiles[j] < 25:
-                    bar.set_color('green')
+                    bar.set_color(self.color_palette[2])
             
             # Add percentile lines
-            ax.axvline(x=50, color='gray', linestyle='--', alpha=0.7, label='50th Percentile')
-            ax.axvline(x=75, color='orange', linestyle='--', alpha=0.7, label='75th Percentile')
-            ax.axvline(x=90, color='red', linestyle='--', alpha=0.7, label='90th Percentile')
+            ax.axvline(x=50, color=self.color_palette[4], linestyle='--', alpha=0.5, label='50th Percentile')
+            ax.axvline(x=75, color=self.color_palette[5], linestyle='--', alpha=0.5, label='75th Percentile')
+            ax.axvline(x=90, color=self.color_palette[7], linestyle='--', alpha=0.5, label='90th Percentile')
             
-            # Add values to bars
-            for j, p in enumerate(percentiles):
-                ax.text(p + 3, j, f"{p:.1f}%", va='center', fontsize=10)
+            # Add values to the right of bars to avoid overlap
+            for j, (p, err) in enumerate(zip(percentiles, errors)):
+                # Position text to the right of the error bar
+                text_x = p + err[1] + 5  # Add 5 units padding after error bar
+                if text_x > 95:  # If too close to edge, position inside
+                    text_x = p - err[0] - 5
+                    ha = 'right'
+                else:
+                    ha = 'left'
+                ax.text(text_x, j, f"{p:.1f}%", va='center', ha=ha, fontsize=7, fontweight='normal')
             
             # Set labels and title
-            ax.set_xlabel('Percentile Rank')
-            ax.set_title(f'Percentile Ranks for {group.title()} Group (N={results["n_group"]})')
-            ax.set_xlim(0, 100)
-            ax.legend(loc='lower right')
+            ax.set_xlabel('Percentile Rank', fontsize=8, fontweight='normal')
+            ax.set_title(f'Percentile Ranks for {group.title()} Group (N={results["n_group"]})', 
+                        fontsize=9, fontweight='normal', pad=10)
+            ax.set_xlim(0, 110)  # Extend xlim to give space for labels
+            ax.legend(loc='lower right', fontsize=7)
             
             # Add grid
-            ax.grid(True, axis='x', linestyle='--', alpha=0.7)
+            ax.grid(True, axis='x', linestyle='--', alpha=0.3)
+            
+            # Adjust y-tick labels
+            ax.set_yticklabels(features, fontsize=7)
         
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'percentile_ranks.png'), dpi=300)
@@ -926,26 +1052,26 @@ class DescriptiveAnalysis:
                              case_studies: Dict,
                              output_dir: str):
         """Create acoustic-semantic alignment visualization"""
-        # Check if we have necessary columns
-        if ('acoustic_volatility_index' not in features_df.columns or 
+        # Check if we have necessary columns - use f0_cv instead of acoustic_volatility_index
+        if ('f0_cv' not in features_df.columns or 
             'sentiment_negative' not in features_df.columns):
             logger.warning("Missing columns for alignment plot. Skipping.")
             return
         
         # Create figure
-        plt.figure(figsize=(12, 10))
+        plt.figure(figsize=(6, 5))
         
         # Create scatter plot of all points
         scatter = plt.scatter(
-            features_df['acoustic_volatility_index'],
+            features_df['f0_cv'],
             features_df['sentiment_negative'],
-            c='lightgray', s=80, alpha=0.5, edgecolors='gray',
+            c=self.color_palette[0], s=40, alpha=0.6, edgecolors=self.color_palette[3],
             label='Baseline Calls'
         )
         
         # Add case study points
         for file_id, case in case_studies.items():
-            acoustic_key = 'acoustic_volatility_index'
+            acoustic_key = 'f0_cv'
             semantic_key = 'sentiment_negative'
             
             if (acoustic_key in case['acoustic_features'] and 
@@ -958,55 +1084,70 @@ class DescriptiveAnalysis:
                     continue
                 
                 # Color based on rating outcome
-                color = 'red' if case['rating_outcome'] == 'downgrade' else 'green'
+                color = self.color_palette[7] if case['rating_outcome'] == 'downgrade' else self.color_palette[2]
                 
                 # Plot point
                 plt.scatter([acoustic_value], [semantic_value], 
-                           color=color, s=150, edgecolors='black', linewidth=1.5,
+                           color=color, s=80, edgecolors=self.color_palette[6], linewidth=1.2,
                            label=f"{file_id} ({case['rating_outcome']})")
                 
-                # Add label
-                plt.text(acoustic_value, semantic_value + 0.02, file_id, 
-                        ha='center', va='bottom', fontsize=10)
+                # Add label with vertical offset to avoid overlap with points
+                plt.text(acoustic_value, semantic_value + 0.04, file_id, 
+                        ha='center', va='bottom', fontsize=7, fontweight='normal')
         
         # Add quadrant lines
-        plt.axvline(x=features_df['acoustic_volatility_index'].median(), 
-                  color='gray', linestyle='--', alpha=0.5)
+        plt.axvline(x=features_df['f0_cv'].median(), 
+                  color=self.color_palette[4], linestyle='--', alpha=0.4)
         plt.axhline(y=features_df['sentiment_negative'].median(), 
-                  color='gray', linestyle='--', alpha=0.5)
+                  color=self.color_palette[4], linestyle='--', alpha=0.4)
         
-        # Add quadrant labels
-        xmax = features_df['acoustic_volatility_index'].max()
+        # Add quadrant labels with adjusted positions to avoid overlap
+        xmax = features_df['f0_cv'].max()
         ymax = features_df['sentiment_negative'].max()
-        xmin = features_df['acoustic_volatility_index'].min()
+        xmin = features_df['f0_cv'].min()
         ymin = features_df['sentiment_negative'].min()
         
-        xmed = features_df['acoustic_volatility_index'].median()
+        xmed = features_df['f0_cv'].median()
         ymed = features_df['sentiment_negative'].median()
         
+        # Baseline quadrant (bottom-left)
         plt.text(xmin + (xmed - xmin) / 2, ymin + (ymed - ymin) / 2, 
                 'Baseline\nQuadrant', 
-                ha='center', va='center', fontsize=12, alpha=0.7)
+                ha='center', va='center', fontsize=8, alpha=0.6, fontweight='normal')
         
+        # Convergent stress quadrant (top-right)
         plt.text(xmed + (xmax - xmed) / 2, ymed + (ymax - ymed) / 2, 
                 'Convergent Stress\nQuadrant', 
-                ha='center', va='center', fontsize=12, alpha=0.7)
+                ha='center', va='center', fontsize=8, alpha=0.6, fontweight='normal')
         
-        plt.text(xmin + (xmed - xmin) / 2, ymed + (ymax - ymed) / 2, 
+        # Semantic stress quadrant (top-left) - adjust position to avoid overlap
+        # Check if there are data points in the upper left that might overlap
+        upper_left_points = features_df[(features_df['f0_cv'] < xmed) & 
+                                       (features_df['sentiment_negative'] > ymed)]
+        
+        if len(upper_left_points) > 0:
+            # If there are points, position text lower to avoid overlap
+            semantic_text_y = ymed + (ymax - ymed) * 0.3  # Lower position
+        else:
+            # If no points, use centered position
+            semantic_text_y = ymed + (ymax - ymed) / 2
+            
+        plt.text(xmin + (xmed - xmin) / 2, semantic_text_y, 
                 'Semantic Stress\nQuadrant', 
-                ha='center', va='center', fontsize=12, alpha=0.7)
+                ha='center', va='center', fontsize=8, alpha=0.6, fontweight='normal')
         
+        # Acoustic stress quadrant (bottom-right)
         plt.text(xmed + (xmax - xmed) / 2, ymin + (ymed - ymin) / 2, 
                 'Acoustic Stress\nQuadrant', 
-                ha='center', va='center', fontsize=12, alpha=0.7)
+                ha='center', va='center', fontsize=8, alpha=0.6, fontweight='normal')
         
         # Set labels and title
-        plt.xlabel('Acoustic Volatility Index')
-        plt.ylabel('Negative Sentiment Score')
-        plt.title('Acoustic-Semantic Alignment', fontsize=14)
+        plt.xlabel('F0 Coefficient of Variation', fontsize=8, fontweight='normal')
+        plt.ylabel('Negative Sentiment Score', fontsize=8, fontweight='normal')
+        plt.title('Acoustic-Semantic Alignment', fontsize=10, fontweight='normal', pad=10)
         
         # Add grid
-        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.grid(True, linestyle='--', alpha=0.3)
         
         # Add legend
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -1022,7 +1163,7 @@ class DescriptiveAnalysis:
                 unique_handles.append(handle)
                 unique_labels.append(label)
         
-        plt.legend(handles=unique_handles, labels=unique_labels, loc='upper left')
+        plt.legend(handles=unique_handles, labels=unique_labels, loc='upper left', fontsize=7)
         
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'acoustic_semantic_alignment.png'), dpi=300)
@@ -1040,7 +1181,7 @@ class DescriptiveAnalysis:
         # Create plots for each case
         for file_id, case in case_studies.items():
             # Create figure
-            fig = plt.figure(figsize=(15, 10))
+            fig = plt.figure(figsize=(10, 8))
             
             # Set up grid
             gs = gridspec.GridSpec(2, 3, figure=fig)
@@ -1066,7 +1207,8 @@ class DescriptiveAnalysis:
             self._create_case_summary(ax5, case, analysis_results)
             
             # Add title
-            plt.suptitle(f"Case Study: {file_id} ({case['rating_outcome'].title()})", fontsize=16)
+            plt.suptitle(f"Case Study: {file_id} ({case['rating_outcome'].title()})", 
+                        fontsize=12, fontweight='normal')
             
             plt.tight_layout()
             plt.savefig(os.path.join(case_study_dir, f'case_study_{file_id}.png'), dpi=300)
@@ -1099,8 +1241,8 @@ class DescriptiveAnalysis:
         
         if not values:
             ax.text(0, 0, f'No {feature_type} data available', 
-                   ha='center', va='center')
-            ax.set_title(title)
+                   ha='center', va='center', fontsize=8, fontweight='normal')
+            ax.set_title(title, fontsize=9, fontweight='normal', pad=10)
             return
         
         # Number of variables
@@ -1119,21 +1261,21 @@ class DescriptiveAnalysis:
         
         # Draw axis lines for each angle and label
         ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(feature_labels)
+        ax.set_xticklabels(feature_labels, fontsize=7)
         
         # Draw y axis labels
         ax.set_yticks([25, 50, 75, 100])
-        ax.set_yticklabels(['25%', '50%', '75%', '100%'])
+        ax.set_yticklabels(['25%', '50%', '75%', '100%'], fontsize=6)
         ax.set_ylim(0, 100)
         
         # Plot data
-        ax.plot(angles, percentiles, 'o-', linewidth=2, color='blue')
+        ax.plot(angles, percentiles, 'o-', linewidth=1.5, color=self.color_palette[5])
         
         # Fill area
-        ax.fill(angles, percentiles, alpha=0.25)
+        ax.fill(angles, percentiles, alpha=0.25, color=self.color_palette[3])
         
         # Add title
-        ax.set_title(title, fontsize=12)
+        ax.set_title(title, fontsize=9, fontweight='normal', pad=10)
     
     def _create_case_percentile_plot(self, ax: plt.Axes, case: Dict):
         """Create percentile rank barplot for case"""
@@ -1162,13 +1304,13 @@ class DescriptiveAnalysis:
                 
                 # Color based on percentile
                 if percentiles[-1] > 90:
-                    colors.append('red')
+                    colors.append(self.color_palette[7])
                 elif percentiles[-1] > 75:
-                    colors.append('orange')
+                    colors.append(self.color_palette[5])
                 elif percentiles[-1] < 25:
-                    colors.append('green')
+                    colors.append(self.color_palette[2])
                 else:
-                    colors.append('blue')
+                    colors.append(self.color_palette[3])
         
         # Add semantic features
         for feature in self.key_semantic_features:
@@ -1189,48 +1331,51 @@ class DescriptiveAnalysis:
                 
                 # Color based on percentile
                 if percentiles[-1] > 90:
-                    colors.append('red')
+                    colors.append(self.color_palette[7])
                 elif percentiles[-1] > 75:
-                    colors.append('orange')
+                    colors.append(self.color_palette[5])
                 elif percentiles[-1] < 25:
-                    colors.append('green')
+                    colors.append(self.color_palette[2])
                 else:
-                    colors.append('blue')
+                    colors.append(self.color_palette[3])
         
         if not features:
             ax.text(0.5, 0.5, 'No percentile data available', 
-                   ha='center', va='center', transform=ax.transAxes)
-            ax.set_title('Percentile Ranks')
+                   ha='center', va='center', transform=ax.transAxes, fontsize=8, fontweight='normal')
+            ax.set_title('Percentile Ranks', fontsize=9, fontweight='normal', pad=10)
             return
         
         # Create horizontal bar chart
         y_pos = np.arange(len(features))
         bars = ax.barh(y_pos, percentiles, xerr=np.array(errors).T if errors else None, 
-                     alpha=0.7, capsize=5)
+                     alpha=0.8, capsize=3)
         
         # Set bar colors
         for bar, color in zip(bars, colors):
             bar.set_color(color)
         
         # Add percentile lines
-        ax.axvline(x=50, color='gray', linestyle='--', alpha=0.7)
-        ax.axvline(x=75, color='orange', linestyle='--', alpha=0.7)
-        ax.axvline(x=90, color='red', linestyle='--', alpha=0.7)
+        ax.axvline(x=50, color=self.color_palette[4], linestyle='--', alpha=0.4)
+        ax.axvline(x=75, color=self.color_palette[5], linestyle='--', alpha=0.4)
+        ax.axvline(x=90, color=self.color_palette[7], linestyle='--', alpha=0.4)
         
-        # Add values to bars
-        for i, p in enumerate(percentiles):
-            ax.text(max(p + 3, 10), i, f"{p:.1f}%", va='center', fontsize=9)
+        # Add values above bars to avoid overlap
+        for i, (p, err) in enumerate(zip(percentiles, errors)):
+            # Calculate text position
+            text_x = p + err[1] + 3 if p + err[1] + 3 < 95 else p - err[0] - 3
+            ha = 'left' if p + err[1] + 3 < 95 else 'right'
+            ax.text(text_x, i, f"{p:.1f}%", va='center', ha=ha, fontsize=7, fontweight='normal')
         
         # Set labels and title
         ax.set_yticks(y_pos)
-        ax.set_yticklabels(features)
+        ax.set_yticklabels(features, fontsize=7)
         ax.invert_yaxis()  # Labels read top-to-bottom
-        ax.set_xlabel('Percentile Rank')
-        ax.set_title('Percentile Ranks vs. Baseline', fontsize=12)
-        ax.set_xlim(0, 100)
+        ax.set_xlabel('Percentile Rank', fontsize=8, fontweight='normal')
+        ax.set_title('Percentile Ranks vs. Baseline', fontsize=9, fontweight='normal', pad=10)
+        ax.set_xlim(0, 105)
         
         # Add grid
-        ax.grid(True, axis='x', linestyle='--', alpha=0.7)
+        ax.grid(True, axis='x', linestyle='--', alpha=0.3)
     
     def _create_case_alignment_plot(self,
                                   ax: plt.Axes,
@@ -1243,15 +1388,15 @@ class DescriptiveAnalysis:
         else:
             baseline_results = analysis_results['all']
         
-        # Get acoustic and semantic data
-        acoustic_key = 'acoustic_volatility_index'
+        # Get acoustic and semantic data - use f0_cv instead of acoustic_volatility_index
+        acoustic_key = 'f0_cv'
         semantic_key = 'sentiment_negative'
         
         if (acoustic_key not in case['acoustic_features'] or 
             semantic_key not in case['semantic_features']):
             ax.text(0.5, 0.5, 'Insufficient data for alignment plot', 
-                   ha='center', va='center', transform=ax.transAxes)
-            ax.set_title('Acoustic-Semantic Alignment')
+                   ha='center', va='center', transform=ax.transAxes, fontsize=8, fontweight='normal')
+            ax.set_title('Acoustic-Semantic Alignment', fontsize=9, fontweight='normal', pad=10)
             return
         
         acoustic_value = case['acoustic_features'][acoustic_key]['value']
@@ -1259,8 +1404,8 @@ class DescriptiveAnalysis:
         
         if acoustic_value is None or semantic_value is None:
             ax.text(0.5, 0.5, 'Insufficient data for alignment plot', 
-                   ha='center', va='center', transform=ax.transAxes)
-            ax.set_title('Acoustic-Semantic Alignment')
+                   ha='center', va='center', transform=ax.transAxes, fontsize=8, fontweight='normal')
+            ax.set_title('Acoustic-Semantic Alignment', fontsize=9, fontweight='normal', pad=10)
             return
         
         # Get baseline acoustic and semantic data
@@ -1277,73 +1422,81 @@ class DescriptiveAnalysis:
             
             # Generate scatter data for baseline distribution
             n_baseline = baseline_results['n_baseline']
-            np.random.seed(42)  # For reproducibility
+            np.random.seed(self.random_seed)  # For reproducibility
             
             baseline_acoustic_values = np.random.normal(baseline_acoustic, baseline_acoustic_std, n_baseline)
             baseline_semantic_values = np.random.normal(baseline_semantic, baseline_semantic_std, n_baseline)
             
             # Create scatter plot
             ax.scatter(baseline_acoustic_values, baseline_semantic_values, 
-                      c='lightgray', s=50, alpha=0.5, edgecolors='gray',
+                      c=self.color_palette[0], s=30, alpha=0.5, edgecolors=self.color_palette[3],
                       label='Baseline Calls')
             
             # Add case point
             ax.scatter([acoustic_value], [semantic_value], 
-                      color='red' if case['rating_outcome'] == 'downgrade' else 'green', 
-                      s=200, edgecolors='black', linewidth=2,
+                      color=self.color_palette[7] if case['rating_outcome'] == 'downgrade' else self.color_palette[2], 
+                      s=100, edgecolors=self.color_palette[6], linewidth=1.5,
                       label=f"{case['file_id']} ({case['rating_outcome']})")
             
             # Add quadrant lines
-            ax.axvline(x=baseline_acoustic, color='gray', linestyle='--', alpha=0.5)
-            ax.axhline(y=baseline_semantic, color='gray', linestyle='--', alpha=0.5)
+            ax.axvline(x=baseline_acoustic, color=self.color_palette[4], linestyle='--', alpha=0.4)
+            ax.axhline(y=baseline_semantic, color=self.color_palette[4], linestyle='--', alpha=0.4)
             
-            # Add quadrant labels
+            # Get plot limits
             xmin, xmax = ax.get_xlim()
             ymin, ymax = ax.get_ylim()
             
+            # Add quadrant labels with adjusted positions to avoid overlap
+            # Baseline quadrant (bottom-left)
             ax.text((xmin + baseline_acoustic) / 2, (ymin + baseline_semantic) / 2, 
                    'Baseline\nQuadrant', 
-                   ha='center', va='center', fontsize=10, alpha=0.7)
+                   ha='center', va='center', fontsize=8, alpha=0.6, fontweight='normal')
             
-            ax.text((baseline_acoustic + xmax) / 2, (baseline_semantic + ymax) / 2, 
+            # Convergent stress quadrant (top-right) - adjusted position
+            ax.text((baseline_acoustic + xmax) / 2, (baseline_semantic + ymax * 0.85) / 2, 
                    'Convergent Stress\nQuadrant', 
-                   ha='center', va='center', fontsize=10, alpha=0.7)
+                   ha='center', va='center', fontsize=8, alpha=0.6, fontweight='normal')
             
+            # Semantic stress quadrant (top-left)
             ax.text((xmin + baseline_acoustic) / 2, (baseline_semantic + ymax) / 2, 
                    'Semantic Stress\nQuadrant', 
-                   ha='center', va='center', fontsize=10, alpha=0.7)
+                   ha='center', va='center', fontsize=8, alpha=0.6, fontweight='normal')
             
+            # Acoustic stress quadrant (bottom-right)
             ax.text((baseline_acoustic + xmax) / 2, (ymin + baseline_semantic) / 2, 
                    'Acoustic Stress\nQuadrant', 
-                   ha='center', va='center', fontsize=10, alpha=0.7)
+                   ha='center', va='center', fontsize=8, alpha=0.6, fontweight='normal')
             
             # Set labels and title
-            ax.set_xlabel('Acoustic Volatility Index')
-            ax.set_ylabel('Negative Sentiment Score')
-            ax.set_title('Acoustic-Semantic Alignment Position', fontsize=12)
+            ax.set_xlabel('F0 Coefficient of Variation', fontsize=8, fontweight='normal')
+            ax.set_ylabel('Negative Sentiment Score', fontsize=8, fontweight='normal')
+            ax.set_title('Acoustic-Semantic Alignment Position', fontsize=9, fontweight='normal', pad=10)
             
             # Add grid
-            ax.grid(True, linestyle='--', alpha=0.7)
+            ax.grid(True, linestyle='--', alpha=0.3)
             
             # Add legend
-            ax.legend(loc='upper left')
+            ax.legend(loc='upper left', fontsize=7)
             
-            # Add percentile annotations
+            # Add percentile annotations with adjusted positions
             acoustic_percentile = case['acoustic_features'][acoustic_key]['percentile']
             semantic_percentile = case['semantic_features'][semantic_key]['percentile']
             
             if acoustic_percentile is not None and semantic_percentile is not None:
-                ax.text(acoustic_value, acoustic_value, 
+                # Position percentile text to avoid overlap with quadrant labels
+                ax.text(acoustic_value, semantic_value - (ymax - ymin) * 0.05, 
                        f"Acoustic: {acoustic_percentile:.1f}%ile", 
-                       ha='center', va='bottom', fontsize=9)
+                       ha='center', va='top', fontsize=7, fontweight='normal',
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
                 
-                ax.text(semantic_value, semantic_value, 
+                ax.text(acoustic_value, semantic_value + (ymax - ymin) * 0.05, 
                        f"Semantic: {semantic_percentile:.1f}%ile", 
-                       ha='left', va='center', fontsize=9)
+                       ha='center', va='bottom', fontsize=7, fontweight='normal',
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
         else:
             ax.text(0.5, 0.5, 'Insufficient baseline data for alignment plot', 
-                   ha='center', va='center', transform=ax.transAxes)
-            ax.set_title('Acoustic-Semantic Alignment')
+                   ha='center', va='center', transform=ax.transAxes, fontsize=8, fontweight='normal')
+            ax.set_title('Acoustic-Semantic Alignment', fontsize=9, fontweight='normal', pad=10)
     
     def _create_case_summary(self,
                            ax: plt.Axes,
@@ -1364,8 +1517,9 @@ class DescriptiveAnalysis:
         
         # Key percentiles
         percentiles = []
+        mad_effects = []
         
-        for feature in ['acoustic_volatility_index', 'f0_cv', 'sentiment_negative']:
+        for feature in ['f0_cv', 'f0_std', 'sentiment_negative']:
             feature_type = 'acoustic_features' if feature in self.key_acoustic_features else 'semantic_features'
             
             if (feature in case[feature_type] and 
@@ -1373,13 +1527,16 @@ class DescriptiveAnalysis:
                 
                 feature_name = feature.replace('_', ' ').title()
                 percentile = case[feature_type][feature]['percentile']
+                mad_effect = case[feature_type][feature].get('mad_effect', None)
                 
                 percentiles.append(f"{feature_name}: {percentile:.1f}%ile")
+                if mad_effect is not None:
+                    mad_effects.append(f"{feature_name} MAD Effect: {mad_effect:.2f}")
         
         # Acoustic-semantic alignment
         alignment = "Acoustic-Semantic Alignment: "
         
-        acoustic_key = 'acoustic_volatility_index'
+        acoustic_key = 'f0_cv'
         semantic_key = 'sentiment_negative'
         
         if (acoustic_key in case['acoustic_features'] and 
@@ -1406,13 +1563,18 @@ class DescriptiveAnalysis:
         # Combine text
         summary_text = f"{title}\n\n{outcome}\n\n{pattern}\n\nKey Percentiles:\n"
         summary_text += "\n".join(f"• {p}" for p in percentiles)
+        
+        if mad_effects:
+            summary_text += "\n\nMAD-Based Effects:\n"
+            summary_text += "\n".join(f"• {m}" for m in mad_effects)
+        
         summary_text += f"\n\n{alignment}"
         
         # Add text box
-        props = dict(boxstyle='round', facecolor='white', alpha=0.8)
+        props = dict(boxstyle='round', facecolor=self.color_palette[0], alpha=0.8)
         ax.text(0.5, 0.5, summary_text, transform=ax.transAxes,
-              fontsize=11, verticalalignment='center', 
-              horizontalalignment='center', bbox=props)
+              fontsize=8, verticalalignment='center', 
+              horizontalalignment='center', bbox=props, fontweight='normal')
     
     def _create_pattern_distribution_plot(self,
                                        features_df: pd.DataFrame,
@@ -1422,47 +1584,47 @@ class DescriptiveAnalysis:
             return
             
         # Create figure
-        plt.figure(figsize=(12, 8))
+        plt.figure(figsize=(6, 5))
         
         # Get pattern counts
         pattern_counts = features_df['communication_pattern'].value_counts()
         
-        # Define color palette
-        colors = {
-            'high_stress': 'red',
-            'moderate_stress': 'orange',
-            'high_excitement': 'green',
-            'moderate_excitement': 'lightgreen',
-            'baseline_stability': 'blue',
-            'mixed_pattern': 'gray'
+        # Define color mapping for patterns
+        colors_map = {
+            'high_stress': self.color_palette[7],
+            'moderate_stress': self.color_palette[5],
+            'high_excitement': self.color_palette[2],
+            'moderate_excitement': self.color_palette[3],
+            'baseline_stability': self.color_palette[1],
+            'mixed_pattern': self.color_palette[4]
         }
         
         # Filter palette to include only existing patterns
-        plot_colors = [colors.get(pattern, 'gray') for pattern in pattern_counts.index]
+        plot_colors = [colors_map.get(pattern, self.color_palette[4]) for pattern in pattern_counts.index]
         
         # Create bar chart
-        bars = plt.bar(pattern_counts.index, pattern_counts.values, color=plot_colors)
+        bars = plt.bar(pattern_counts.index, pattern_counts.values, color=plot_colors, alpha=0.8)
         
-        # Add value labels
+        # Add value labels above bars
         for bar in bars:
             height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height,
-                   f'{height}', ha='center', va='bottom')
+            plt.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                   f'{height}', ha='center', va='bottom', fontsize=8, fontweight='normal')
         
         # Improve x-axis labels
         plt.xticks(
             range(len(pattern_counts)), 
             [p.replace('_', ' ').title() for p in pattern_counts.index],
-            rotation=45, ha='right'
+            rotation=45, ha='right', fontsize=8
         )
         
         # Set labels and title
-        plt.xlabel('Communication Pattern')
-        plt.ylabel('Count')
-        plt.title('Distribution of Communication Patterns', fontsize=14)
+        plt.xlabel('Communication Pattern', fontsize=8, fontweight='normal')
+        plt.ylabel('Count', fontsize=8, fontweight='normal')
+        plt.title('Distribution of Communication Patterns', fontsize=10, fontweight='normal', pad=10)
         
         # Add grid
-        plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+        plt.grid(True, axis='y', linestyle='--', alpha=0.3)
         
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'pattern_distribution.png'), dpi=300)
@@ -1492,6 +1654,14 @@ class DescriptiveAnalysis:
         # Add title
         report.append("# EARNINGS CALL ACOUSTIC ANALYSIS REPORT")
         report.append("=" * 80)
+        report.append("")
+        
+        # Add methodology note about reproducibility
+        report.append("## REPRODUCIBILITY NOTE")
+        report.append("-" * 50)
+        report.append(f"Random seed used for all bootstrap procedures: {self.random_seed}")
+        report.append(f"Number of bootstrap iterations: {self.n_bootstrap}")
+        report.append(f"Confidence level: {self.confidence_level * 100}%")
         report.append("")
         
         # Add baseline summary
@@ -1527,6 +1697,7 @@ class DescriptiveAnalysis:
             report.append(f"  - Mean: {data['baseline_mean']:.4f}")
             report.append(f"  - Std Dev: {data['baseline_std']:.4f}")
             report.append(f"  - Median: {data['baseline_median']:.4f}")
+            report.append(f"  - MAD: {data['baseline_mad']:.4f}")
         
         # Add non-affirmation summaries
         report.append("\n## 2. NON-AFFIRMATION GROUP ANALYSIS")
@@ -1543,10 +1714,19 @@ class DescriptiveAnalysis:
                 report.append(f"\n**Pattern**: {assessment['pattern'].replace('_', ' ').title()}")
                 report.append(f"**Strength**: {assessment['strength'].title()}")
                 report.append(f"**Confidence**: {assessment['confidence'].title()}")
-                report.append(f"**Acoustic Percentile**: {assessment['acoustic_volatility_percentile']:.1f}%")
-                report.append(f"**Semantic Percentile**: {assessment['negative_sentiment_percentile']:.1f}%")
-                report.append(f"**Acoustic Effect Size**: {assessment['acoustic_volatility_effect_size']:.2f}")
-                report.append(f"**Semantic Effect Size**: {assessment['negative_sentiment_effect_size']:.2f}")
+                
+                if 'f0_cv_percentile' in assessment:
+                    report.append(f"**F0 CV Percentile**: {assessment['f0_cv_percentile']:.1f}%")
+                if 'negative_sentiment_percentile' in assessment:
+                    report.append(f"**Semantic Percentile**: {assessment['negative_sentiment_percentile']:.1f}%")
+                if 'f0_cv_effect_size' in assessment:
+                    report.append(f"**F0 CV Cohen's d**: {assessment['f0_cv_effect_size']:.2f}")
+                if 'f0_cv_mad_effect' in assessment:
+                    report.append(f"**F0 CV MAD Effect**: {assessment['f0_cv_mad_effect']:.2f}")
+                if 'negative_sentiment_effect_size' in assessment:
+                    report.append(f"**Semantic Cohen's d**: {assessment['negative_sentiment_effect_size']:.2f}")
+                if 'negative_sentiment_mad_effect' in assessment:
+                    report.append(f"**Semantic MAD Effect**: {assessment['negative_sentiment_mad_effect']:.2f}")
             
             # Add key acoustic features
             report.append("\n**Key Acoustic Features**:")
@@ -1559,7 +1739,7 @@ class DescriptiveAnalysis:
                     percentile_ranks = [p['percentile'] for p in data['percentile_ranks']]
                     mean_percentile = np.mean(percentile_ranks) if percentile_ranks else float('nan')
                     
-                    report.append(f"  - {feature.replace('_', ' ').title()}: {data['group_mean']:.4f} ({mean_percentile:.1f}%ile)")
+                    report.append(f"  - {feature.replace('_', ' ').title()}: {data['group_mean']:.4f} ({mean_percentile:.1f}%ile, MAD effect: {data['mean_mad_effect']:.2f})")
             
             # Add key semantic features
             report.append("\n**Key Semantic Features**:")
@@ -1572,7 +1752,7 @@ class DescriptiveAnalysis:
                     percentile_ranks = [p['percentile'] for p in data['percentile_ranks']]
                     mean_percentile = np.mean(percentile_ranks) if percentile_ranks else float('nan')
                     
-                    report.append(f"  - {feature.replace('_', ' ').title()}: {data['group_mean']:.4f} ({mean_percentile:.1f}%ile)")
+                    report.append(f"  - {feature.replace('_', ' ').title()}: {data['group_mean']:.4f} ({mean_percentile:.1f}%ile, MAD effect: {data['mean_mad_effect']:.2f})")
         
         # Add case studies
         report.append("\n## 3. INDIVIDUAL CASE STUDIES")
@@ -1596,8 +1776,12 @@ class DescriptiveAnalysis:
                     
                     value = case[feature_type][feature]['value']
                     percentile = case[feature_type][feature]['percentile']
+                    mad_effect = case[feature_type][feature].get('mad_effect', None)
                     
-                    report.append(f"  - {feature.replace('_', ' ').title()}: {value:.4f} ({percentile:.1f}%ile)")
+                    if mad_effect is not None:
+                        report.append(f"  - {feature.replace('_', ' ').title()}: {value:.4f} ({percentile:.1f}%ile, MAD effect: {mad_effect:.2f})")
+                    else:
+                        report.append(f"  - {feature.replace('_', ' ').title()}: {value:.4f} ({percentile:.1f}%ile)")
         
         # Add methodology note
         report.append("\n## 4. METHODOLOGY NOTE")
@@ -1607,14 +1791,19 @@ This analysis follows a descriptive exploration methodology appropriate for smal
 
 1. Baseline Establishment: Affirmation calls (N≈21) provide the reference distribution for acoustic and semantic features.
 
-2. Percentile Ranking: Non-affirmation cases are ranked against this baseline, with bootstrap confidence intervals for uncertainty quantification.
+2. Percentile Ranking: Non-affirmation cases are ranked against this baseline, with bootstrap confidence intervals for uncertainty quantification (seed={} for reproducibility).
 
-3. Pattern Classification: Cases are classified based on acoustic-semantic alignment following Russell's Circumplex Model of Affect.
+3. MAD-Based Standardization: In addition to traditional Cohen's d, we report MAD-based effect sizes which are:
+   - Robust to outliers and non-normal distributions
+   - Calculable for any sample size (including n=1)
+   - More appropriate for small samples than mean/SD-based measures
 
-4. Case Studies: Individual cases receive detailed analysis rather than attempting group-level inference inappropriate for small samples.
+4. Pattern Classification: Cases are classified based on acoustic-semantic alignment following Russell's Circumplex Model of Affect.
+
+5. Case Studies: Individual cases receive detailed analysis rather than attempting group-level inference inappropriate for small samples.
 
 This approach aligns with contemporary scientific frameworks for financial speech analysis while acknowledging sample size constraints.
-""")
+""".format(self.random_seed))
         
         # Write report
         with open(output_path, 'w') as f:
@@ -1627,8 +1816,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Descriptive analysis for earnings call acoustic features"
     )
-    parser.add_argument("--features_dir", type=str, required=True,
-                       help="Directory containing combined features")
+    parser.add_argument("--features_file", type=str, required=True,
+                       help="Path to combined features CSV file")
     parser.add_argument("--ratings_file", type=str, default=None,
                        help="Path to ratings CSV file")
     parser.add_argument("--output_dir", type=str, required=True,
@@ -1637,22 +1826,28 @@ def main():
                        help="Number of bootstrap iterations for confidence intervals")
     parser.add_argument("--confidence", type=float, default=0.95,
                        help="Confidence level for intervals")
+    parser.add_argument("--random_seed", type=int, default=42,
+                       help="Random seed for reproducibility")
     
     args = parser.parse_args()
     
     # Initialize analysis
     analyzer = DescriptiveAnalysis(
         n_bootstrap=args.bootstrap,
-        confidence_level=args.confidence
+        confidence_level=args.confidence,
+        random_seed=args.random_seed
     )
     
     # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
     
     try:
+        # Extract directory from features file path
+        features_dir = os.path.dirname(args.features_file)
+        
         # Load data
         logger.info("Loading features and ratings data...")
-        features_df, ratings_df = analyzer.load_data(args.features_dir, args.ratings_file)
+        features_df, ratings_df = analyzer.load_data(features_dir, args.ratings_file)
         
         # Prepare analysis data
         logger.info("Preparing analysis data...")

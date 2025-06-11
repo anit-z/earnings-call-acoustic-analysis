@@ -1,104 +1,86 @@
 # CORRELATION ANALYSIS REPORT
 ================================================================================
 
+## REPRODUCIBILITY NOTE
+--------------------------------------------------
+Random seed used for bootstrap procedures: 42
+Bootstrap iterations for confidence intervals: 1000
+
 ## 1. SIGNIFICANT CORRELATIONS SUMMARY
 --------------------------------------------------
 
 ### 1.1 Full Correlations
-Total significant correlations: 14
+Total significant correlations: 18
 
-Top 10 significant correlations:
-1. **Sentiment Negative** and **Sentiment Neutral**: -0.992 (strong negative, p=0.0000)
-2. **Sentiment Neutral** and **Sentiment Negative**: -0.992 (strong negative, p=0.0000)
-3. **Is Downgrade** and **Is Affirm**: -0.798 (strong negative, p=0.0001)
-4. **Is Affirm** and **Is Downgrade**: -0.798 (strong negative, p=0.0001)
-5. **Sentiment Negative** and **Sentiment Variability**: -0.746 (strong negative, p=0.0009)
-6. **Sentiment Variability** and **Sentiment Negative**: -0.746 (strong negative, p=0.0009)
-7. **Sentiment Neutral** and **Sentiment Variability**: 0.691 (strong positive, p=0.0042)
-8. **Sentiment Variability** and **Sentiment Neutral**: 0.691 (strong positive, p=0.0042)
-9. **F0 Cv** and **Pause Frequency**: 0.647 (strong positive, p=0.0103)
-10. **Pause Frequency** and **F0 Cv**: 0.647 (strong positive, p=0.0103)
+**Strong correlations (|r| ≥ 0.6):**
+- Sentiment Negative & Sentiment Neutral: r = -0.992 (negative, p = 0.0000)
+- Sentiment Neutral & Sentiment Negative: r = -0.992 (negative, p = 0.0000)
+- Is Downgrade & Is Affirm: r = -0.798 (negative, p = 0.0001)
+- Is Affirm & Is Downgrade: r = -0.798 (negative, p = 0.0001)
+- Sentiment Negative & Sentiment Variability: r = -0.746 (negative, p = 0.0006)
+
+**Moderate correlations (0.3 ≤ |r| < 0.6):**
+- F0 Cv & Jitter Local: r = 0.594 (positive, p = 0.0209)
+- Jitter Local & F0 Cv: r = 0.594 (positive, p = 0.0209)
+- Is Upgrade & Is Affirm: r = -0.552 (negative, p = 0.0429)
+- Is Affirm & Is Upgrade: r = -0.552 (negative, p = 0.0429)
+- F0 Cv & F0 Std: r = 0.542 (positive, p = 0.0453)
 
 ### 1.1 Acoustic-Acoustic Correlations
-Total significant correlations: 8
+Total significant correlations: 6
 
-Top 8 significant correlations:
-1. **F0 Cv** and **Pause Frequency**: 0.647 (strong positive, p=0.0094)
-2. **Pause Frequency** and **F0 Cv**: 0.647 (strong positive, p=0.0094)
-3. **F0 Cv** and **Jitter Local**: 0.594 (strong positive, p=0.0167)
-4. **Jitter Local** and **F0 Cv**: 0.594 (strong positive, p=0.0167)
-5. **F0 Cv** and **F0 Std**: 0.542 (strong positive, p=0.0309)
-6. **F0 Std** and **F0 Cv**: 0.542 (strong positive, p=0.0309)
-7. **F0 Std** and **Acoustic Volatility Index**: 0.510 (strong positive, p=0.0408)
-8. **Acoustic Volatility Index** and **F0 Std**: 0.510 (strong positive, p=0.0408)
+**Strong correlations (|r| ≥ 0.6):**
+- F0 Cv & Pause Frequency: r = 0.647 (positive, p = 0.0038)
+- Pause Frequency & F0 Cv: r = 0.647 (positive, p = 0.0038)
+
+**Moderate correlations (0.3 ≤ |r| < 0.6):**
+- F0 Cv & Jitter Local: r = 0.594 (positive, p = 0.0067)
+- Jitter Local & F0 Cv: r = 0.594 (positive, p = 0.0067)
+- F0 Cv & F0 Std: r = 0.542 (positive, p = 0.0124)
+- F0 Std & F0 Cv: r = 0.542 (positive, p = 0.0124)
 
 ### 1.1 Semantic-Semantic Correlations
 Total significant correlations: 8
 
-Top 8 significant correlations:
-1. **Sentiment Negative** and **Sentiment Neutral**: -0.992 (strong negative, p=0.0000)
-2. **Sentiment Neutral** and **Sentiment Negative**: -0.992 (strong negative, p=0.0000)
-3. **Sentiment Negative** and **Sentiment Variability**: -0.746 (strong negative, p=0.0001)
-4. **Sentiment Variability** and **Sentiment Negative**: -0.746 (strong negative, p=0.0001)
-5. **Sentiment Neutral** and **Sentiment Variability**: 0.691 (strong positive, p=0.0004)
-6. **Sentiment Variability** and **Sentiment Neutral**: 0.691 (strong positive, p=0.0004)
-7. **Sentiment Positive** and **Sentiment Variability**: 0.644 (strong positive, p=0.0010)
-8. **Sentiment Variability** and **Sentiment Positive**: 0.644 (strong positive, p=0.0010)
+**Strong correlations (|r| ≥ 0.6):**
+- Sentiment Negative & Sentiment Neutral: r = -0.992 (negative, p = 0.0000)
+- Sentiment Neutral & Sentiment Negative: r = -0.992 (negative, p = 0.0000)
+- Sentiment Negative & Sentiment Variability: r = -0.746 (negative, p = 0.0001)
+- Sentiment Variability & Sentiment Negative: r = -0.746 (negative, p = 0.0001)
+- Sentiment Neutral & Sentiment Variability: r = 0.691 (positive, p = 0.0004)
 
 ## 2. ACOUSTIC-SEMANTIC CORRELATIONS
 --------------------------------------------------
 
-Strongest acoustic-semantic correlations:
+### 2.1 Convergent Stress Indicators
+Looking for high correlations between stress-related acoustic features and negative sentiment:
+- F0 Cv & Sentiment Negative: r = -0.165 (weak negative)
+- F0 Cv & Sentiment Variability: r = 0.110 (weak positive)
+- F0 Std & Sentiment Negative: r = 0.187 (weak positive)
+- F0 Std & Sentiment Variability: r = -0.126 (weak negative)
+- Pause Frequency & Sentiment Negative: r = -0.031 (weak negative)
+- Pause Frequency & Sentiment Variability: r = -0.093 (weak negative)
+- Jitter Local & Sentiment Negative: r = -0.179 (weak negative)
+- Jitter Local & Sentiment Variability: r = 0.233 (weak positive)
 
-## 3. FEATURE-RATING CORRELATIONS
+## 3. METHODOLOGICAL NOTES
 --------------------------------------------------
 
-Features most correlated with downgrades:
-- **Pause Frequency**: 0.156 (weak positive, p=0.4661)
-- **Sentiment Negative**: 0.101 (weak positive, p=0.6393)
-- **Speech Rate**: 0.053 (weak positive, p=0.8069)
-- **Acoustic Semantic Alignment**: 0.042 (weak positive, p=0.8452)
-- **Sentiment Variability**: 0.033 (weak positive, p=0.8779)
+This correlation analysis implements the methodology specified in the thesis:
 
-Features most correlated with upgrades:
-- **Sentiment Negative**: 0.339 (moderate positive, p=0.1049)
-- **Jitter Local**: 0.280 (weak positive, p=0.1859)
-- **F0 Cv**: 0.269 (weak positive, p=0.2031)
-- **F0 Std**: 0.265 (weak positive, p=0.2116)
-- **Pause Frequency**: 0.241 (weak positive, p=0.2571)
+1. **Acoustic-Semantic Convergence Thresholds** (as per Section 3.4):
+   - Strong correlation: |r| ≥ 0.6
+   - Moderate correlation: 0.3 ≤ |r| < 0.6
+   - Weak correlation: |r| < 0.3
 
-## 4. PATTERN-BASED CORRELATION INTERPRETATION
---------------------------------------------------
+2. **Multiple Comparison Correction**: P-values are adjusted using the fdr_bh method to control for false discovery rate.
 
-Communication pattern distribution:
-- Mixed Pattern: 11
-- Baseline Stability: 6
-- Moderate Stress: 4
-- High Excitement: 1
-- Moderate Excitement: 1
-- High Stress: 1
+3. **Significance Threshold**: Correlations are considered significant at p < 0.05 after correction.
 
-Top acoustic-semantic correlations from pattern analysis:
-- **Sentiment Positive** and **Jitter Local**: 0.448 (moderate positive)
-- **Sentiment Positive** and **F0 Cv**: 0.269 (weak positive)
-- **Sentiment Positive** and **Speech Rate**: 0.247 (weak positive)
-- **Sentiment Variability** and **Jitter Local**: 0.233 (weak positive)
-- **Sentiment Neutral** and **F0 Std**: -0.195 (weak negative)
+4. **Bootstrap Confidence Intervals**: Each correlation includes bootstrap-based confidence intervals (1000 iterations, seed=42).
 
-## 5. METHODOLOGICAL NOTES
---------------------------------------------------
+5. **Sample Size Considerations**: Given n=24 with extreme class imbalance (21:2:1), correlations should be interpreted as exploratory baselines rather than definitive findings.
 
-This correlation analysis implements a comprehensive framework for examining relationships in acoustic-semantic-rating data:
+6. **Validation Approach**: FinBERT sentiment serves as a directional validator for acoustic stress markers, not as a fused feature.
 
-1. Multiple Comparison Correction: P-values are adjusted using the fdr_bh method to control for false discovery rate.
-
-2. Significance Threshold: Correlations are considered significant at p < 0.05 after correction.
-
-3. Effect Size Interpretation: Correlation strength is categorized as:
-   - Strong: |r| > 0.5
-   - Moderate: 0.3 < |r| < 0.5
-   - Weak: |r| < 0.3
-
-4. Sample Size Considerations: Given the small sample size, correlations should be interpreted cautiously, particularly for sector-specific analyses.
-
-5. Convergent Evidence: Findings are most reliable when supported by multiple correlation indicators and aligned with theoretical expectations.
+7. **Constant Features**: Features with identical values across all samples cannot have meaningful correlations and are reported as NaN.
