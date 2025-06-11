@@ -261,7 +261,7 @@ def load_case_studies():
 def main():
     # Show info box for Streamlit Cloud
     if 'STREAMLIT_SHARING_MODE' in os.environ or '/mount/src/' in str(Path.cwd()):
-        with st.expander("About this Demo", expanded=False):
+        with st.expander("ℹ️ About this Demo", expanded=False):
             st.info("""
             **Welcome to the Earnings Call Acoustic Analysis Demonstrator!**
             
@@ -328,92 +328,39 @@ def show_overview(df):
         else:
             st.metric("Sectors", "N/A")
     
-    # Communication patterns if available
+    # Summary tables instead of charts
+    st.subheader("Data Summary")
+    
+    # Communication patterns summary
     if 'communication_pattern' in df.columns:
-        st.subheader("Communication Patterns")
+        st.write("**Communication Patterns Distribution:**")
         pattern_counts = df['communication_pattern'].value_counts()
-        
-        fig, ax = plt.subplots(figsize=(8, 5))
-        colors = {
-            'high_stress': 'red',
-            'moderate_stress': 'orange',
-            'high_excitement': 'green',
-            'moderate_excitement': 'lightgreen',
-            'baseline_stability': 'blue',
-            'mixed_pattern': 'gray'
-        }
-        bar_colors = [colors.get(x, 'gray') for x in pattern_counts.index]
-        
-        bars = ax.bar(pattern_counts.index, pattern_counts.values, color=bar_colors)
-        ax.set_xlabel('Communication Pattern')
-        ax.set_ylabel('Count')
-        ax.set_title('Distribution of Communication Patterns')
-        plt.xticks(rotation=45, ha='right')
-        
-        # Add value labels on bars
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height,
-                   f'{int(height)}', ha='center', va='bottom')
-        
-        plt.tight_layout()
-        st.pyplot(fig)
-        plt.close()
+        pattern_df = pd.DataFrame({
+            'Pattern': pattern_counts.index,
+            'Count': pattern_counts.values,
+            'Percentage': (pattern_counts.values / len(df) * 100).round(1)
+        })
+        st.dataframe(pattern_df)
     
-    # Feature distributions
-    st.subheader("Key Feature Distributions")
-    
-    # Select features to display
-    acoustic_features = ['f0_cv', 'acoustic_volatility_index', 'pause_frequency', 'jitter_local']
-    
-    # Check which features are available
-    available_acoustic = [f for f in acoustic_features if f in df.columns]
-    
-    if available_acoustic:
-        fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-        axes = axes.flatten()
-        
-        for i, feature in enumerate(available_acoustic[:4]):
-            ax = axes[i]
-            df[feature].hist(ax=ax, bins=20, alpha=0.7, color='skyblue', edgecolor='black')
-            ax.set_title(feature.replace('_', ' ').title())
-            ax.set_xlabel('Value')
-            ax.set_ylabel('Frequency')
-            
-            # Add mean line
-            mean_val = df[feature].mean()
-            ax.axvline(mean_val, color='red', linestyle='--', linewidth=2, alpha=0.7)
-            ax.text(mean_val, ax.get_ylim()[1]*0.9, f'μ={mean_val:.3f}', 
-                   ha='center', bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
-        
-        # Hide unused subplots
-        for i in range(len(available_acoustic), 4):
-            axes[i].set_visible(False)
-        
-        plt.tight_layout()
-        st.pyplot(fig)
-        plt.close()
-    
-    # Sector distribution if available
+    # Sector distribution summary
     if 'sector' in df.columns:
-        st.subheader("Sector Distribution")
+        st.write("**Sector Distribution:**")
         sector_counts = df['sector'].value_counts()
-        
-        fig, ax = plt.subplots(figsize=(8, 5))
-        bars = ax.bar(sector_counts.index, sector_counts.values, color='lightblue', edgecolor='black')
-        ax.set_xlabel('Sector')
-        ax.set_ylabel('Count')
-        ax.set_title('Distribution of Calls by Sector')
-        plt.xticks(rotation=45, ha='right')
-        
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height,
-                   f'{int(height)}', ha='center', va='bottom')
-        
-        plt.tight_layout()
-        st.pyplot(fig)
-        plt.close()
+        sector_df = pd.DataFrame({
+            'Sector': sector_counts.index,
+            'Count': sector_counts.values,
+            'Percentage': (sector_counts.values / len(df) * 100).round(1)
+        })
+        st.dataframe(sector_df)
+    
+    # Feature statistics summary
+    st.write("**Key Feature Statistics:**")
+    acoustic_features = ['f0_cv', 'acoustic_volatility_index', 'pause_frequency', 'jitter_local']
+    available_features = [f for f in acoustic_features if f in df.columns]
+    
+    if available_features:
+        stats_df = df[available_features].describe().round(3)
+        st.dataframe(stats_df)
 
 def show_individual_analysis(df):
     st.header("Individual Call Analysis")
