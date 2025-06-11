@@ -73,23 +73,6 @@ data/raw/ratings/ratings\_metadata.csv
 
 ## **Usage**
 
-### **1\. Data Preparation**
-
-python src/data\_preparation.py \--input data/raw \--output data/processed
-
-### **2\. Feature Extraction**
-
-\# Extract acoustic features  
-python src/acoustic/extract\_features.py \--audio\_dir data/processed/audio
-
-\# Generate FinBERT sentiments  
-python src/semantic/finbert\_analysis.py \--transcript\_dir data/raw/transcripts
-
-### **3\. Statistical Analysis**
-
-\# Basic statistical analysis  
-python src/analysis/statistical\_analysis.py \--features data/features/combined
-
 \# Generate case studies  
 python src/analysis/case\_studies/generate\_case\_studies.py \\  
     \--features\_dir data/features/combined \\  
