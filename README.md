@@ -68,39 +68,8 @@ This study uses the **Earnings-21** dataset:
 * Available at: [Earnings-21 Dataset](https://github.com/revdotcom/speech-datasets)
 
 Credit rating metadata is available at:
-
 data/raw/ratings/ratings\_metadata.csv
 
-## **Project Structure**
-
-earnings-call\-acoustic-analysis/  
-├── data/                          \# Data directory  
-│   ├── raw/                       \# Raw data files  
-│   │   └── ratings/              \# Credit rating metadata  
-│   ├── features/                  \# Extracted features  
-│   │   ├── acoustic/             \# Acoustic features  
-│   │   ├── semantic/             \# FinBERT outputs  
-│   │   └── combined/             \# Combined features  
-│   └── processed/                 \# Preprocessed audio  
-├── demonstrator/                  \# Streamlit app  
-│   └── demonstrator.py           \# Main dashboard script  
-├── notebooks/                     \# Jupyter notebooks  
-│   ├── 01\_data\_preparation.ipynb  
-│   ├── 02\_acoustic\_extraction.ipynb  
-│   ├── 03\_sentiment\_analysis.ipynb  
-│   └── 04\_statistical\_analysis.ipynb  
-├── src/                          \# Source code  
-│   ├── acoustic/                 \# Acoustic processing modules  
-│   ├── semantic/                 \# NLP modules  
-│   ├── analysis/                 \# Statistical analysis  
-│   └── utils/                    \# Utility functions  
-├── results/                      \# Analysis outputs  
-│   ├── figures/                  \# Visualizations  
-│   ├── tables/                   \# Statistical summaries  
-│   └── case\_studies/             \# Case study profiles  
-├── requirements.txt              \# Python dependencies  
-├── Dockerfile                    \# Docker configuration  
-└── README.md                     \# This file
 
 ## **Usage**
 
