@@ -328,39 +328,14 @@ def show_overview(df):
         else:
             st.metric("Sectors", "N/A")
     
-    # Summary tables instead of charts
-    st.subheader("Data Summary")
-    
-    # Communication patterns summary
-    if 'communication_pattern' in df.columns:
-        st.write("**Communication Patterns Distribution:**")
-        pattern_counts = df['communication_pattern'].value_counts()
-        pattern_df = pd.DataFrame({
-            'Pattern': pattern_counts.index,
-            'Count': pattern_counts.values,
-            'Percentage': (pattern_counts.values / len(df) * 100).round(1)
-        })
-        st.dataframe(pattern_df)
-    
-    # Sector distribution summary
-    if 'sector' in df.columns:
-        st.write("**Sector Distribution:**")
-        sector_counts = df['sector'].value_counts()
-        sector_df = pd.DataFrame({
-            'Sector': sector_counts.index,
-            'Count': sector_counts.values,
-            'Percentage': (sector_counts.values / len(df) * 100).round(1)
-        })
-        st.dataframe(sector_df)
-    
-    # Feature statistics summary
-    st.write("**Key Feature Statistics:**")
-    acoustic_features = ['f0_cv', 'acoustic_volatility_index', 'pause_frequency', 'jitter_local']
-    available_features = [f for f in acoustic_features if f in df.columns]
-    
-    if available_features:
-        stats_df = df[available_features].describe().round(3)
-        st.dataframe(stats_df)
+    # Add instructions for using the app
+    st.markdown("""
+    ### Instructions
+    - Use the sidebar to navigate between views
+    - Select "Individual Analysis" to explore specific calls
+    - Select "Group Comparison" to compare features across different groups
+    - Select "Case Studies" to examine notable examples
+    """)
 
 def show_individual_analysis(df):
     st.header("Individual Call Analysis")
